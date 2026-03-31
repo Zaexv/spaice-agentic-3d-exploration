@@ -4,6 +4,7 @@
  */
 
 import { RemotePlayer } from './RemotePlayer.js';
+import { CONFIG } from '../config/config.js';
 
 // Get io from global window object (loaded via CDN) or dynamic import
 let io = null;
@@ -52,7 +53,7 @@ export class MultiplayerManager {
     /**
      * Check if multiplayer server is available
      */
-    static async checkServerAvailability(serverUrl = 'http://localhost:3000') {
+    static async checkServerAvailability(serverUrl = CONFIG.multiplayer.serverUrl) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -73,7 +74,7 @@ export class MultiplayerManager {
     /**
      * Connect to multiplayer server
      */
-    async connect(serverUrl = 'http://localhost:3000') {
+    async connect(serverUrl = CONFIG.multiplayer.serverUrl) {
         // Load socket.io-client dynamically
         const ioClient = await MultiplayerManager.loadSocketIO();
         

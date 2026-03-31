@@ -3,17 +3,19 @@
  * Converts text descriptions into natural-sounding voice audio
  */
 
+import { CONFIG } from '../config/config.js';
+
 class ElevenLabsService {
   constructor(apiKey) {
     if (!apiKey) {
       throw new Error('ElevenLabs API key is required');
     }
-    
+
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.elevenlabs.io/v1';
-    
+    this.baseUrl = CONFIG.elevenLabs.baseURL;
+
     this.config = {
-      voiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel voice (default)
+      voiceId: CONFIG.elevenLabs.voiceId,
       model: 'eleven_monolingual_v1',
       stability: 0.5,
       similarityBoost: 0.75,

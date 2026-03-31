@@ -22,15 +22,20 @@ export const CONFIG = {
     // OpenAI Configuration
     openai: {
         apiKey: getEnvVar('VITE_OPENAI_API_KEY'),
-        model: 'gpt-3.5-turbo', // Using gpt-3.5-turbo for faster/cheaper responses
+        model: getEnvVar('VITE_AI_MODEL') || 'gpt-3.5-turbo',
         baseURL: 'https://api.openai.com/v1/chat/completions'
     },
 
     // Eleven Labs Configuration (optional)
     elevenLabs: {
         apiKey: getEnvVar('VITE_ELEVENLABS_API_KEY'),
-        voiceId: '21m00Tcm4TlvDq8ikWAM', // Default voice
+        voiceId: getEnvVar('VITE_ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM',
         baseURL: 'https://api.elevenlabs.io/v1/text-to-speech'
+    },
+
+    // Multiplayer Configuration
+    multiplayer: {
+        serverUrl: getEnvVar('VITE_MULTIPLAYER_URL') || 'http://localhost:3000'
     },
 
     // Feature flags

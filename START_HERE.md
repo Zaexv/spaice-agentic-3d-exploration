@@ -40,8 +40,7 @@ If you DON'T see the button, check the console for errors.
 
 **Fix:**
 ```bash
-# In a new terminal
-cd "/Users/eduardo.pertierrapuche/Development/Whispers Project/Whispers-Backend/agentic-3d-space-exploration-hamburg-ai-hackathon-jan-26"
+# In a new terminal (from the project root)
 npm run multiplayer-server
 ```
 

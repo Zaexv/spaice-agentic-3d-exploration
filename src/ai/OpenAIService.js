@@ -3,6 +3,8 @@
  * Generates descriptive text about planets based on JSON data
  */
 
+import { CONFIG } from '../config/config.js';
+
 class OpenAIService {
   constructor(apiKey) {
     if (!apiKey) {
@@ -11,14 +13,14 @@ class OpenAIService {
       this.enabled = false;
       return;
     }
-    
+
     // Try to dynamically import OpenAI - will fail gracefully in static builds
     this.enabled = false;
     this.client = null;
     this.initPromise = this.initializeClient(apiKey);
-    
+
     this.config = {
-      model: 'gpt-3.5-turbo',
+      model: CONFIG.openai.model,
       temperature: 0.7,
       max_tokens: 300
     };
