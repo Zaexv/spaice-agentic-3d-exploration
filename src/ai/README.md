@@ -1,27 +1,26 @@
-# AI Services - OpenAI Integration
+# AI Services - Gemini Integration
 
 ## Overview
-The AI Services module provides text generation capabilities using OpenAI GPT models.
+The AI Services module provides text generation capabilities using Google Gemini.
 
 ## Files
 ```
 src/ai/
-└── OpenAIService.js          # OpenAI text generation
+└── AIService.js              # Gemini text generation
 ```
 
 ## Usage
 
-### OpenAIService
 ```javascript
-import OpenAIService from './src/ai/OpenAIService.js';
+import AIService from './src/ai/AIService.js';
 
-const openAI = new OpenAIService(apiKey);
-const description = await openAI.generatePlanetDescription(planetData);
+const ai = new AIService(apiKey);
+const description = await ai.generatePlanetDescription(planetData);
 ```
 
 ## Configuration
 
-All AI configuration is centralized in `/src/config/config.js`. Services read their defaults (model, etc.) from there.
+All AI configuration is centralized in `/src/config/config.js`. Uses `VITE_GEMINI_API_KEY` env var.
 
 ## API Key Setup
 

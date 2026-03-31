@@ -3,7 +3,7 @@
  *
  * A modular dialog component that displays rich planet information with:
  * - Basic planet data and characteristics
- * - AI-generated descriptions (OpenAI)
+ * - AI-generated descriptions (Gemini)
  * - Tabbed interface for organized information
  *
  * Extension Points:
@@ -13,8 +13,8 @@
  */
 
 export class PlanetExplorationDialog {
-    constructor(openAIService = null, elevenLabsService = null, app = null) {
-        this.openAIService = openAIService;
+    constructor(aiService = null, app = null) {
+        this.aiService = aiService;
         this.app = app; // Reference to main App instance
         this.currentPlanet = null;
         this.currentTab = 'overview';
@@ -379,7 +379,7 @@ export class PlanetExplorationDialog {
 
         // Enable/disable input based on OpenAI availability
         if (this.elements.chatInput && this.elements.chatSendBtn) {
-            if (this.openAIService) {
+            if (this.aiService) {
                 this.elements.chatInput.disabled = false;
                 this.elements.chatSendBtn.disabled = false;
                 this.elements.chatInput.placeholder = `💬 Ask about ${planetData.pl_name}...`;
@@ -393,10 +393,10 @@ export class PlanetExplorationDialog {
                 this.elements.chatMessages.innerHTML += `
                     <div class="ai-chat-message error-message">
                         <div class="message-avatar">⚠️</div>
-                        <div class="message-content">OpenAI service is not configured. Please check your API key.</div>
+                        <div class="message-content">AI service is not configured. Please check your API key.</div>
                     </div>
                 `;
-                console.warn('⚠️ OpenAI service not available');
+                console.warn('⚠️ AI service not available');
             }
         } else {
             console.error('❌ Chat input or send button not found');
@@ -645,7 +645,7 @@ export class PlanetExplorationDialog {
 
         try {
             // Generate description using OpenAI
-            const description = await this.openAIService.generatePlanetDescription(planetData);
+            const description = await this.aiService.generatePlanetDescription(planetData);
 
             // Cache it
             this.cachedDescriptions.set(planetName, description);
@@ -724,7 +724,7 @@ export class PlanetExplorationDialog {
 
         try {
             // Generate insights using OpenAI
-            const insights = await this.openAIService.generateCharacteristicsInsights(planetData);
+            const insights = await this.aiService.generateCharacteristicsInsights(planetData);
 
             // Cache it
             this.cachedInsights.set(planetName, insights);
@@ -797,7 +797,7 @@ export class PlanetExplorationDialog {
 
         try {
             // Call AI
-            const response = await this.openAIService.chatAboutPlanet(
+            const response = await this.aiService.chatAboutPlanet(
                 message,
                 planetData,
                 this.chatHistory

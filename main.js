@@ -14,7 +14,7 @@ import { PlanetTargetingSquare } from './src/ui/PlanetTargetingSquare.js';
 import { ProximityDetector } from './src/utils/ProximityDetector.js';
 import { NarrationService } from './src/services/NarrationService.js';
 import { NarratorDialog } from './src/ui/NarratorDialog.js';
-import OpenAIService from './src/ai/OpenAIService.js';
+import AIService from './src/ai/AIService.js';
 import { CONFIG, isAIConfigured } from './src/config/config.js';
 import { WarpTunnel } from './src/objects/WarpTunnel.js';
 import { GalaxyField } from './src/objects/GalaxyField.js';
@@ -192,20 +192,20 @@ class App {
     }
 
     initExplorationDialog() {
-        let openAIService = null;
+        let aiService = null;
 
         if (isAIConfigured()) {
             try {
-                openAIService = new OpenAIService(CONFIG.openai.apiKey);
+                aiService = new AIService(CONFIG.ai.apiKey);
             } catch (error) {
                 console.warn('OpenAI service not initialized:', error.message);
             }
         }
 
-        this.explorationDialog = new PlanetExplorationDialog(openAIService, null, this);
+        this.explorationDialog = new PlanetExplorationDialog(aiService, this);
 
         this.proximityDetector = new ProximityDetector(this.planetDataService, this.exoplanetField);
-        this.narrationService = new NarrationService(openAIService, null);
+        this.narrationService = new NarrationService(aiService);
         this.narratorDialog = new NarratorDialog(this.narrationService);
 
         window.planetExplorationDialog = this.explorationDialog;

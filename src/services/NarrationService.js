@@ -1,12 +1,10 @@
 /**
- * NarrationService - Generates AI descriptions and audio for planets
+ * NarrationService - Generates AI descriptions for planets
  */
 export class NarrationService {
-    constructor(openAIService, elevenLabsService) {
-        this.openAIService = openAIService;
-        this.elevenLabsService = elevenLabsService;
+    constructor(aiService) {
+        this.aiService = aiService;
         this.textCache = new Map();
-        this.audioCache = new Map();
         this.isGenerating = false;
         this.queue = [];
     }
@@ -67,7 +65,7 @@ export class NarrationService {
     async generateDescription(planet) {
         console.log('🤖 generateDescription called for', planet.pl_name);
         
-        if (!this.openAIService) {
+        if (!this.aiService) {
             console.log('⚠️ No OpenAI service, using fallback');
             return this.generateFallbackDescription(planet);
         }
@@ -97,7 +95,7 @@ Make it sound like a friendly documentary narrator - informative but captivating
 
         try {
             console.log('📡 Calling OpenAI...');
-            const response = await this.openAIService.generateCompletion(prompt);
+            const response = await this.aiService.generateCompletion(prompt);
             console.log('✅ OpenAI response received');
             return response.trim();
         } catch (error) {
