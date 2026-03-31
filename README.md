@@ -4,11 +4,9 @@
 
 [![Live Demo](https://img.shields.io/badge/🌌_LIVE_DEMO-Launch_Space_Odyssey-blueviolet?style=for-the-badge)](https://agentic-space-exploration.pages.dev)
 
-[![GitHub Pages](https://img.shields.io/badge/🔬_ALTERNATIVE-GitHub_Pages_(Beta)-gray?style=for-the-badge)](https://zaexv.github.io/agentic-3d-space-exploration-hamburg-ai-hackathon-jan-26/)
+[![GitHub Pages](https://img.shields.io/badge/🔬_GITHUB_PAGES-Launch_on_GitHub-gray?style=for-the-badge)](https://zaexv.github.io/spaice-agentic-3d-exploration/)
 
 [![Video Demo](https://img.shields.io/badge/🎬_VIDEO_DEMO-Watch_on_YouTube-red?style=for-the-badge)](https://youtu.be/ZdC-fMK62Fg)
-
-> ⚠️ *The GitHub Pages version may be unstable. For the best experience, use the main demo above.*
 
 ---
 
@@ -103,6 +101,6 @@ Built with ❤️ at **Hamburg AI Hackathon 2026** by **Eduardo Pertierra Puche*
 
 <div align="center">
 
-**[🚀 Launch Demo](https://agentic-space-exploration.pages.dev)** · **[📄 View Code](https://github.com/Zaexv/agentic-3d-space-exploration-hamburg-ai-hackathon-jan-26)**
+**[🚀 Launch Demo](https://agentic-space-exploration.pages.dev)** · **[📄 View Code](https://github.com/Zaexv/spaice-agentic-3d-exploration)**
 
 </div>
