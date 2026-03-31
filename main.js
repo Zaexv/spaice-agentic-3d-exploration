@@ -13,6 +13,7 @@ import { PlanetExplorationDialog } from './src/ui/PlanetExplorationDialog.js';
 import { PlanetTargetingSquare } from './src/ui/PlanetTargetingSquare.js';
 import { ProximityDetector } from './src/utils/ProximityDetector.js';
 import AIService from './src/ai/AIService.js';
+import { NarratorDialog } from './src/ui/NarratorDialog.js';
 import { CONFIG, isAIConfigured } from './src/config/config.js';
 import { WarpTunnel } from './src/objects/WarpTunnel.js';
 import { GalaxyField } from './src/objects/GalaxyField.js';
@@ -70,6 +71,7 @@ class App {
             this.inputManager.setDependencies({
                 spacecraft: this.spacecraft,
                 explorationDialog: this.explorationDialog,
+                narratorDialog: this.narratorDialog,
                 cameraManager: this.cameraManager,
                 sceneManager: this.sceneManager,
                 exoplanetField: this.exoplanetField,
@@ -201,6 +203,7 @@ class App {
 
         this.explorationDialog = new PlanetExplorationDialog(aiService, this);
         this.proximityDetector = new ProximityDetector(this.planetDataService, this.exoplanetField);
+        this.narratorDialog = new NarratorDialog(aiService);
 
         window.planetExplorationDialog = this.explorationDialog;
     }
@@ -258,9 +261,9 @@ class App {
     }
 
     narrateClosestPlanet() {
-        if (!this.spacecraft || !this.proximityDetector || !this.explorationDialog) return;
+        if (!this.spacecraft || !this.proximityDetector || !this.narratorDialog) return;
 
-        if (this.explorationDialog.isVisible()) return;
+        if (this.narratorDialog.isShowing()) return;
 
         const closest = this.proximityDetector.getClosestPlanet(this.spacecraft.group.position);
         if (!closest) return;
@@ -270,7 +273,7 @@ class App {
             this.targetingSquare.target(closest.mesh, closest.planet, parentGroup);
         }
 
-        this.explorationDialog.show(closest.planet);
+        this.narratorDialog.show(closest.planet);
     }
 
     closeModal() {
