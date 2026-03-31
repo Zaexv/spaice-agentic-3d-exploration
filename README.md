@@ -29,7 +29,7 @@
 🌍 **Real NASA Data** — Powered by authentic NASA Exoplanet Archive data  
 🎮 **Immersive Controls** — Fly with keyboard, teleport instantly, switch views  
 🤖 **AI Descriptions** — OpenAI-powered planet narratives  
-🔊 **Voice Narration** — Eleven Labs text-to-speech integration  
+🔊 **Voice Narration** — Text-to-speech integration
 🚀 **Spacecraft Simulation** — Chase camera & cockpit views  
 ⚡ **Blazing Fast** — Spatial clustering for smooth rendering  
 
@@ -53,7 +53,6 @@ graph TB
 
     subgraph AI["🤖 AI Services"]
         OpenAI[OpenAI GPT-4<br/>Planet Descriptions]
-        ElevenLabs[Eleven Labs<br/>Voice Narration]
     end
 
     NASA --> Clusters
@@ -61,10 +60,9 @@ graph TB
     Planets --> Scene
     Scene --> UI
     Spacecraft --> Scene
-    
+
     Planets -.-> OpenAI
-    OpenAI -.-> ElevenLabs
-    ElevenLabs -.-> UI
+    OpenAI -.-> UI
 ```
 
 ---
@@ -92,9 +90,8 @@ All exoplanet data comes directly from the **[NASA Exoplanet Archive](https://ex
 
 ## 📚 Documentation
 
-- **[START_HERE.md](./START_HERE.md)** - Complete setup and feature guide
 - **[Architecture.md](./Architecture.md)** - Technical architecture overview
-- **[docs/](./docs/)** - All guides, tutorials, and historical documentation
+- **[docs/](./docs/)** - All guides, tutorials, and documentation
 
 ---
 

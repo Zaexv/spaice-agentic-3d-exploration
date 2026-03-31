@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This repo is a Three.js-based 3D space exploration app with AI narration (OpenAI + ElevenLabs), multiplayer (Socket.io), and NASA exoplanet data. It was built during a hackathon and has accumulated significant technical debt. The codebase works but is hard to scale due to God Objects, duplicated code, dead files, scattered configuration, and 80+ archive docs that add noise.
+This repo is a Three.js-based 3D space exploration app with AI narration (OpenAI), multiplayer (Socket.io), and NASA exoplanet data. It was built during a hackathon and has accumulated significant technical debt. The codebase works but is hard to scale due to God Objects, duplicated code, dead files, scattered configuration, and 80+ archive docs that add noise.
 
 ---
 
@@ -13,13 +13,13 @@ This repo is a Three.js-based 3D space exploration app with AI narration (OpenAI
 |------|-------|----------|
 | `src/services/PlanetService.js` | 313 | Superseded by `PlanetDataService.js`. Only referenced in test/example/docs files. |
 | `src/services/FrontendPlanetService.js` | 446 | Superseded by `PlanetDataService.js`. Only referenced in docs/examples. |
-| `src/services/AIService.js` | ~100 | Superseded by `OpenAIService.js` + `ElevenLabsService.js`. Only imported by test/example files. |
+| `src/services/AIService.js` | ~100 | Superseded by `OpenAIService.js`. Only imported by test/example files. |
 
 ### Test/Example Files (not wired into any test framework)
 | File | Purpose |
 |------|---------|
 | `src/ai/testAIService.js` | Manual test script |
-| `src/ai/testElevenLabsService.js` | Manual test script |
+| `src/ai/testElevenLabsService.js` | Manual test script (deleted) |
 | `src/ai/example-browser-usage.js` | Example with TODOs |
 | `src/ai/example-combined-usage.js` | Example not integrated |
 | `src/services/testPlanetService.js` | Manual test script |
@@ -44,7 +44,6 @@ This repo is a Three.js-based 3D space exploration app with AI narration (OpenAI
 ### Configuration Duplication
 - `src/config/config.js` defines model name, voice ID, API keys
 - `src/ai/OpenAIService.js` re-defines model defaults
-- `src/ai/ElevenLabsService.js` re-defines voice ID
 - **Action**: Single source of truth in `config.js`
 
 ---
@@ -74,9 +73,7 @@ Handles data loading, planet classification, color generation, atmosphere calcul
 |----------|-------|-----------|
 | `main.js:39` | `'http://localhost:3000'` | env var `VITE_MULTIPLAYER_URL` |
 | `config.js:25` | `'gpt-3.5-turbo'` | env var `VITE_AI_MODEL` |
-| `config.js:32` | `'21m00Tcm4TlvDq8ikWAM'` | env var `VITE_ELEVENLABS_VOICE_ID` |
 | `OpenAIService.js:21` | `'gpt-3.5-turbo'` | use `CONFIG.openai.model` |
-| `ElevenLabsService.js:16` | voice ID | use `CONFIG.elevenLabs.voiceId` |
 
 ### Excessive Logging
 426+ `console.log/warn/error` calls with no log level control. These should be behind a debug flag or removed for production.
@@ -89,8 +86,8 @@ Handles data loading, planet classification, color generation, atmosphere calcul
 - [x] Delete `src/services/PlanetService.js`
 - [x] Delete `src/services/FrontendPlanetService.js`
 - [x] Delete `src/services/AIService.js`
-- [x] Delete all test/example files (`testAIService.js`, `testElevenLabsService.js`, `example-*.js`, `testPlanetService.js`, `planetServiceIntegration.example.js`, `example-dialog-usage.js`)
-- [x] Remove dead npm scripts from `package.json` (`test-ai`, `test-elevenlabs`, `test-ai-combined`, `test-planet-service`)
+- [x] Delete all test/example files (`testAIService.js`, `example-*.js`, `testPlanetService.js`, `planetServiceIntegration.example.js`, `example-dialog-usage.js`)
+- [x] Remove dead npm scripts from `package.json` (`test-ai`, `test-ai-combined`, `test-planet-service`)
 - [x] Delete `docs/archive/` (50+ obsolete docs)
 - [x] Consolidate `docs/guides/` (remove redundant multiplayer docs, etc.)
 
@@ -126,7 +123,6 @@ src/controls/                    -> FlightControls, PlanetNavigator, etc. (OK)
 src/services/PlanetDataService.js -> Keep (primary data service)
 src/services/NarrationService.js  -> Keep (AI narration wrapper)
 src/ai/OpenAIService.js          -> Keep (fix config duplication)
-src/ai/ElevenLabsService.js      -> Keep (fix config duplication)
 src/ui/                          -> Keep all non-example files
 src/utils/                       -> Keep (consolidate texture generators)
 src/multiplayer/                 -> Keep

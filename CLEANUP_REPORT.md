@@ -18,13 +18,13 @@ Removed 66 files (dead code, obsolete docs, test artifacts), consolidated duplic
 |------|-------|--------|
 | `src/services/PlanetService.js` | 313 | Superseded by `PlanetDataService.js`, never imported |
 | `src/services/FrontendPlanetService.js` | 446 | Superseded by `PlanetDataService.js`, never imported |
-| `src/services/AIService.js` | ~100 | Superseded by `OpenAIService.js` + `ElevenLabsService.js` |
+| `src/services/AIService.js` | ~100 | Superseded by `OpenAIService.js` |
 
 ### Test & Example Files (7 files)
 | File | Reason |
 |------|--------|
 | `src/ai/testAIService.js` | Manual test, not in any test framework |
-| `src/ai/testElevenLabsService.js` | Manual test, not in any test framework |
+| `src/ai/testElevenLabsService.js` | Manual test, not in any test framework (ElevenLabs removed) |
 | `src/ai/example-browser-usage.js` | Example with TODOs, never integrated |
 | `src/ai/example-combined-usage.js` | Example, never integrated |
 | `src/services/testPlanetService.js` | Manual test for deleted PlanetService |
@@ -32,7 +32,7 @@ Removed 66 files (dead code, obsolete docs, test artifacts), consolidated duplic
 | `src/ui/example-dialog-usage.js` | Example, never integrated |
 
 ### Dead npm Scripts Removed
-- `test-ai`, `test-elevenlabs`, `test-ai-combined`, `test-planet-service`
+- `test-ai`, `test-ai-combined`, `test-planet-service`
 
 ---
 
@@ -80,13 +80,12 @@ All verified as current, non-redundant, and serving distinct purposes. Organized
 
 ### Centralized in `src/config/config.js`
 - Added `CONFIG.multiplayer.serverUrl` (reads `VITE_MULTIPLAYER_URL`)
-- Added env var support for `VITE_AI_MODEL` and `VITE_ELEVENLABS_VOICE_ID`
+- Added env var support for `VITE_AI_MODEL`
 
 ### Services Updated to Use CONFIG
 | File | Change |
 |------|--------|
 | `src/ai/OpenAIService.js` | Imports CONFIG, uses `CONFIG.openai.model` instead of hardcoded `'gpt-3.5-turbo'` |
-| `src/ai/ElevenLabsService.js` | Imports CONFIG, uses `CONFIG.elevenLabs.voiceId` and `CONFIG.elevenLabs.baseURL` |
 | `src/multiplayer/MultiplayerManager.js` | Imports CONFIG, uses `CONFIG.multiplayer.serverUrl` as default |
 | `main.js` | Uses `CONFIG.multiplayer.serverUrl` instead of hardcoded `'http://localhost:3000'` (3 occurrences) |
 
@@ -94,7 +93,6 @@ All verified as current, non-redundant, and serving distinct purposes. Organized
 Added optional variables:
 ```
 VITE_AI_MODEL
-VITE_ELEVENLABS_VOICE_ID
 VITE_MULTIPLAYER_URL
 ```
 

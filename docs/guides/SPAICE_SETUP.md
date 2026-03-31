@@ -7,7 +7,6 @@ SpAIce is your friendly AI space guide with a 3D animated face! It provides narr
 - **3D Animated Face** - Cute robot face with floating animation
 - **Talking Animation** - Face animates when speaking
 - **OpenAI Integration** - Generates intelligent planet descriptions
-- **ElevenLabs TTS** - Natural voice narration (optional)
 - **Interactive Chat** - Ask SpAIce questions about any planet
 
 ## Setup Instructions
@@ -19,13 +18,6 @@ SpAIce is your friendly AI space guide with a 3D animated face! It provides narr
 2. Create an account or sign in
 3. Generate a new API key
 4. Copy the key (starts with `sk-`)
-
-#### ElevenLabs (Optional - for voice narration)
-1. Visit: https://elevenlabs.io/
-2. Create an account
-3. Go to Settings → API Keys
-4. Generate a new API key
-5. Copy the key
 
 ### 2. Configure Environment
 
@@ -41,8 +33,6 @@ Edit `.env` and add your keys:
 # OpenAI API Key (Required)
 VITE_OPENAI_API_KEY=sk-your-actual-openai-key-here
 
-# ElevenLabs API Key (Optional - for TTS)
-VITE_ELEVENLABS_API_KEY=your-elevenlabs-key-here
 ```
 
 ### 3. Start the Application
@@ -72,7 +62,7 @@ npm run dev
 - ✅ Interactive chat with Q&A
 - ❌ No voice narration (text only)
 
-### With OpenAI + ElevenLabs
+### With OpenAI
 - ✅ AI-generated planet descriptions
 - ✅ Interactive chat with Q&A
 - ✅ Natural voice narration
@@ -114,11 +104,6 @@ SpAIce can answer questions about:
 - Check browser console for API errors
 - Ensure you have API credits
 
-### No voice narration
-- Add ElevenLabs API key to `.env`
-- Check browser console for TTS errors
-- Restart the dev server after adding keys
-
 ### Chat not working
 - OpenAI API key must be configured
 - Check network connection
@@ -130,11 +115,6 @@ SpAIce can answer questions about:
 - ~$0.0015 per narration
 - ~$0.0010 per chat message
 - Very affordable for development
-
-### ElevenLabs
-- Free tier: 10,000 characters/month
-- Enough for ~100-200 narrations
-- Perfect for testing!
 
 ## Security Note
 

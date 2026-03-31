@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-SpAIce is an interactive 3D space exploration app built with Three.js, featuring 6,000+ NASA exoplanets and AI-powered narration (OpenAI + ElevenLabs).
+SpAIce is an interactive 3D space exploration app built with Three.js, featuring 6,000+ NASA exoplanets and AI-powered narration (OpenAI).
 
 ## Quick Reference
 
@@ -17,8 +17,7 @@ npm run build            # Production build (output: dist/)
 main.js                    # App orchestrator (~500 lines) - creates subsystems, animation loop
 src/
 ├── ai/                    # AI services
-│   ├── OpenAIService.js   #   Text generation (uses CONFIG for model)
-│   └── ElevenLabsService.js #   TTS (uses CONFIG for voiceId, baseURL)
+│   └── OpenAIService.js   #   Text generation (uses CONFIG for model)
 ├── config/
 │   ├── config.js          #   Central config - ALL env vars, API keys, feature flags
 │   └── planets.js         #   Static planet definitions
@@ -50,7 +49,7 @@ src/
 │   ├── PlanetClassifier.js     # Pure logic: type classification by radius/temp
 │   ├── PlanetVisualGenerator.js # Pure logic: colors, atmosphere, rings
 │   ├── CoordinateComputer.js   # Pure logic: 3D coords from RA/Dec/Distance
-│   └── NarrationService.js     # AI narration wrapper (OpenAI + ElevenLabs)
+│   └── NarrationService.js     # AI narration wrapper (OpenAI)
 ├── ui/
 │   ├── HUDManager.js           # HUD updates, UI toggle (extracted from main.js)
 │   ├── PlanetExplorationDialog.js # Planet info dialog (1128 lines - needs decomposition)
@@ -82,7 +81,7 @@ src/
 
 ### Code Patterns
 - **ES modules** throughout (`import`/`export`, `"type": "module"` in package.json)
-- **Default exports** for AI services (`OpenAIService`, `ElevenLabsService`)
+- **Default exports** for AI services (`OpenAIService`)
 - **Named exports** for everything else (`{ PlanetDataService }`, `{ InputManager }`)
 - **Pure functions** for classification, visuals, coordinates (no class, stateless)
 - **Class instances** for stateful managers (InputManager, HUDManager, TeleportController)
@@ -115,7 +114,7 @@ NASA JSON clusters -> PlanetDataService.loadCluster()
 - Add methods to main.js App class - extract into appropriate module
 - Create test/example files without wiring them into a test framework
 - Create docs in `docs/archive/` (deleted - use git history for context)
-- Import `PlanetService.js`, `FrontendPlanetService.js`, or `AIService.js` (deleted - use `PlanetDataService` and `OpenAIService`/`ElevenLabsService`)
+- Import `PlanetService.js`, `FrontendPlanetService.js`, or `AIService.js` (deleted - use `PlanetDataService` and `OpenAIService`)
 - Use raw `console.log` for new code - use `src/utils/logger.js`
 
 ## Known Technical Debt

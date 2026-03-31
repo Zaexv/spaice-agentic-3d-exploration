@@ -18,7 +18,7 @@ Tabbed dialog showing planet overview, characteristics, and AI-generated descrip
 ```javascript
 import { PlanetExplorationDialog } from './src/ui/PlanetExplorationDialog.js';
 
-const dialog = new PlanetExplorationDialog(openAIService, elevenLabsService);
+const dialog = new PlanetExplorationDialog(openAIService, null);
 dialog.show(planetData, (planet) => {
     console.log('Teleporting to:', planet.pl_name);
 });

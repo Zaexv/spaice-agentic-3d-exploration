@@ -35,8 +35,6 @@ Want AI descriptions and audio narration? Easy!
 
 ### Step 1: Get API Keys (Free Trials Available)
 - **OpenAI**: https://platform.openai.com/api-keys
-- **Eleven Labs**: https://elevenlabs.io/app/speech-synthesis
-
 ### Step 2: Add Keys to Config
 
 Edit `src/config/config.js`:
@@ -47,13 +45,8 @@ export const CONFIG = {
         apiKey: 'sk-your-actual-key-here',  // ← Paste your OpenAI key
         model: 'gpt-4'
     },
-    elevenLabs: {
-        apiKey: 'your-actual-key-here',  // ← Paste your Eleven Labs key
-        voiceId: '21m00Tcm4TlvDq8ikWAM'
-    },
     features: {
         enableAI: true,           // ← Set to true
-        enableNarration: true,    // ← Set to true
         cacheResponses: true
     }
 };

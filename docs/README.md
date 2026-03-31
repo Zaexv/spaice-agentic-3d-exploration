@@ -37,7 +37,6 @@ Located in [`guides/`](./guides/)
 - [LOADING_SCREEN_GUIDE.md](./guides/LOADING_SCREEN_GUIDE.md) - Loading screen
 - [VAPORWAVE_SELECTOR_GUIDE.md](./guides/VAPORWAVE_SELECTOR_GUIDE.md) - UI selector
 - [DIALOG_QUICK_START.md](./guides/DIALOG_QUICK_START.md) - Dialog system
-- [ELEVENLABS_VOICE_GUIDE.md](./guides/ELEVENLABS_VOICE_GUIDE.md) - Voice narration
 - [PLANET_EXPLORATION_DIALOG_COMPLETE.md](./guides/PLANET_EXPLORATION_DIALOG_COMPLETE.md) - Planet exploration dialog
 - [NASA_UI_RESTORATION.md](./guides/NASA_UI_RESTORATION.md) - NASA mission control UI
 - [SPACECRAFT_CHARACTERISTICS.md](./guides/SPACECRAFT_CHARACTERISTICS.md) - Spacecraft design reference
@@ -50,6 +49,5 @@ Located in [`guides/`](./guides/)
 ├── src/               # Source code
 ├── pipelines/         # Data processing pipeline
 ├── nasa_data/         # NASA exoplanet data
-├── server/            # Multiplayer server
 └── assets/            # Static assets
 ```

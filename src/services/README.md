@@ -6,8 +6,11 @@ Business logic services for the 3D Space Exploration application.
 ## Files
 ```
 src/services/
-├── PlanetDataService.js   # Loads and enriches NASA exoplanet data
-└── NarrationService.js    # AI narration (wraps OpenAI + ElevenLabs)
+├── PlanetDataService.js      # Data loading orchestrator (clusters, enrichment)
+├── PlanetClassifier.js       # Pure functions: type classification by radius/temp
+├── PlanetVisualGenerator.js  # Pure functions: colors, atmosphere, rings, solar system overrides
+├── CoordinateComputer.js     # Pure function: 3D coords from RA/Dec/Distance
+└── NarrationService.js       # AI narration wrapper (OpenAI)
 ```
 
 ## PlanetDataService
@@ -22,11 +25,11 @@ const planets = service.getPlanets();
 ```
 
 ## NarrationService
-Wraps OpenAIService and ElevenLabsService to provide unified text generation and TTS.
+Wraps OpenAIService to provide unified text generation.
 
 ```javascript
 import { NarrationService } from './src/services/NarrationService.js';
 
-const narration = new NarrationService(openAIService, elevenLabsService);
+const narration = new NarrationService(openAIService, null);
 const result = await narration.narratePlanet(planetData);
 ```

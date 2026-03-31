@@ -71,13 +71,8 @@ export const CONFIG = {
         apiKey: 'YOUR_OPENAI_API_KEY',  // Add your key
         model: 'gpt-4'
     },
-    elevenLabs: {
-        apiKey: 'YOUR_ELEVENLABS_API_KEY',  // Add your key
-        voiceId: '21m00Tcm4TlvDq8ikWAM'
-    },
     features: {
         enableAI: true,           // Enable AI descriptions
-        enableNarration: true,    // Enable audio narration
         cacheResponses: true      // Cache to save API calls
     }
 };
@@ -92,7 +87,6 @@ The dialog works perfectly without API keys - it simply won't show the AI Descri
 - [x] Tabbed interface (Overview, Characteristics, AI)
 - [x] Basic planet information display
 - [x] OpenAI integration for descriptions
-- [x] Eleven Labs integration for audio
 - [x] Audio player controls (play, pause, stop)
 - [x] Caching system (AI responses & audio)
 - [x] Smooth open/close animations
@@ -129,11 +123,8 @@ dialog.show(planetData, (planet) => {
 ### With AI Services
 ```javascript
 import { OpenAIService } from './src/ai/OpenAIService.js';
-import { ElevenLabsService } from './src/ai/ElevenLabsService.js';
-
 const openAI = new OpenAIService('key');
-const elevenLabs = new ElevenLabsService('key');
-const dialog = new PlanetExplorationDialog(openAI, elevenLabs);
+const dialog = new PlanetExplorationDialog(openAI, null);
 
 dialog.show(planetData);  // AI description auto-generated
 ```
@@ -143,9 +134,7 @@ dialog.show(planetData);  // AI description auto-generated
 // Initialize in App class
 initExplorationDialog() {
     const openAI = isAIConfigured() ? new OpenAIService(CONFIG.openai.apiKey) : null;
-    const elevenLabs = isNarrationConfigured() ? new ElevenLabsService(CONFIG.elevenLabs.apiKey) : null;
-    
-    this.explorationDialog = new PlanetExplorationDialog(openAI, elevenLabs);
+    this.explorationDialog = new PlanetExplorationDialog(openAI, null);
 }
 
 // Show on planet click
@@ -232,8 +221,7 @@ src/ui/
 1. **PlanetDataService** - Fetches planet data
 2. **TeleportManager** - Handles teleportation
 3. **OpenAIService** - Generates descriptions
-4. **ElevenLabsService** - Creates audio narration
-5. **Config System** - Conditional feature loading
+4. **Config System** - Conditional feature loading
 
 ### Ready for Integration
 1. Q&A system (chat interface)

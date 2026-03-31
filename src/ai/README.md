@@ -1,45 +1,32 @@
-# AI Services - OpenAI & ElevenLabs Integration
+# AI Services - Gemini Integration
 
 ## Overview
-The AI Services module provides two main capabilities:
-1. **OpenAI Integration** - Generate descriptive text about planets using GPT models
-2. **ElevenLabs Integration** - Convert text descriptions into natural-sounding voice
+The AI Services module provides text generation capabilities using Google Gemini.
 
 ## Files
 ```
 src/ai/
-├── OpenAIService.js          # OpenAI text generation
-└── ElevenLabsService.js      # ElevenLabs text-to-speech
+└── AIService.js              # Gemini text generation
 ```
 
 ## Usage
 
-### OpenAIService
 ```javascript
-import OpenAIService from './src/ai/OpenAIService.js';
+import AIService from './src/ai/AIService.js';
 
-const openAI = new OpenAIService(apiKey);
-const description = await openAI.generatePlanetDescription(planetData);
-```
-
-### ElevenLabsService
-```javascript
-import ElevenLabsService from './src/ai/ElevenLabsService.js';
-
-const elevenLabs = new ElevenLabsService(apiKey);
-const audio = await elevenLabs.textToSpeechAndPlay(text);
+const ai = new AIService(apiKey);
+const description = await ai.generatePlanetDescription(planetData);
 ```
 
 ## Configuration
 
-All AI configuration is centralized in `/src/config/config.js`. Services read their defaults (model, voice ID, etc.) from there.
+All AI configuration is centralized in `/src/config/config.js`. Uses `VITE_GEMINI_API_KEY` env var.
 
 ## API Key Setup
 
 Add keys to `.env`:
 ```env
 VITE_OPENAI_API_KEY=sk-proj-...
-VITE_ELEVENLABS_API_KEY=sk_...
 ```
 
 ## Security Notes

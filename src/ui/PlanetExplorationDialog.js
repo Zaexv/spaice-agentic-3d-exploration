@@ -3,32 +3,23 @@
  *
  * A modular dialog component that displays rich planet information with:
  * - Basic planet data and characteristics
- * - AI-generated descriptions (OpenAI)
- * - Text-to-speech narration (Eleven Labs)
+ * - AI-generated descriptions (Gemini)
  * - Tabbed interface for organized information
  *
  * Extension Points:
  * - Add Q&A functionality
- * - Add audio tours
  * - Add planet comparison mode
  * - Add bookmark/favorites
  */
 
 export class PlanetExplorationDialog {
-    constructor(openAIService = null, elevenLabsService = null, app = null) {
-        this.openAIService = openAIService;
-        this.elevenLabsService = elevenLabsService;
+    constructor(aiService = null, app = null) {
+        this.aiService = aiService;
         this.app = app; // Reference to main App instance
         this.currentPlanet = null;
         this.currentTab = 'overview';
-        this.audioElement = null;
-        this.insightsAudioElement = null;
-        this.isAudioPlaying = false;
-        this.isInsightsAudioPlaying = false;
         this.cachedDescriptions = new Map();
         this.cachedInsights = new Map();
-        this.cachedAudio = new Map();
-        this.cachedInsightsAudio = new Map();
         this.chatHistory = []; // Store chat messages
 
         this.init();
@@ -257,10 +248,6 @@ export class PlanetExplorationDialog {
             this.app.controlsEnabled = false;
         }
 
-        // Stop any playing audio from previous planet
-        this.stopAudio();
-        this.stopInsightsAudio();
-
         // Clear previous content
         this.clearAllContent();
 
@@ -319,8 +306,6 @@ export class PlanetExplorationDialog {
     hide() {
         this.overlay.classList.remove('visible');
         this.dialog.classList.remove('visible');
-        this.stopAudio();
-        this.stopInsightsAudio();
 
         // Clear chat state
         this.chatHistory = [];
@@ -394,7 +379,7 @@ export class PlanetExplorationDialog {
 
         // Enable/disable input based on OpenAI availability
         if (this.elements.chatInput && this.elements.chatSendBtn) {
-            if (this.openAIService) {
+            if (this.aiService) {
                 this.elements.chatInput.disabled = false;
                 this.elements.chatSendBtn.disabled = false;
                 this.elements.chatInput.placeholder = `💬 Ask about ${planetData.pl_name}...`;
@@ -408,10 +393,10 @@ export class PlanetExplorationDialog {
                 this.elements.chatMessages.innerHTML += `
                     <div class="ai-chat-message error-message">
                         <div class="message-avatar">⚠️</div>
-                        <div class="message-content">OpenAI service is not configured. Please check your API key.</div>
+                        <div class="message-content">AI service is not configured. Please check your API key.</div>
                     </div>
                 `;
-                console.warn('⚠️ OpenAI service not available');
+                console.warn('⚠️ AI service not available');
             }
         } else {
             console.error('❌ Chat input or send button not found');
@@ -660,7 +645,7 @@ export class PlanetExplorationDialog {
 
         try {
             // Generate description using OpenAI
-            const description = await this.openAIService.generatePlanetDescription(planetData);
+            const description = await this.aiService.generatePlanetDescription(planetData);
 
             // Cache it
             this.cachedDescriptions.set(planetName, description);
@@ -668,10 +653,6 @@ export class PlanetExplorationDialog {
             // Display it
             this.displayAIDescription(description);
 
-            // Load audio if Eleven Labs is available
-            if (this.elevenLabsService) {
-                this.loadAudio(description, planetName);
-            }
         } catch (error) {
             console.error('Error generating AI description:', error);
             this.elements.aiDescriptionContainer.innerHTML = `
@@ -705,7 +686,6 @@ export class PlanetExplorationDialog {
             if (this.currentPlanet) {
                 // Clear cache
                 this.cachedDescriptions.delete(this.currentPlanet.pl_name);
-                this.cachedAudio.delete(this.currentPlanet.pl_name);
                 // Reload
                 this.loadAIDescription(this.currentPlanet);
             }
@@ -744,7 +724,7 @@ export class PlanetExplorationDialog {
 
         try {
             // Generate insights using OpenAI
-            const insights = await this.openAIService.generateCharacteristicsInsights(planetData);
+            const insights = await this.aiService.generateCharacteristicsInsights(planetData);
 
             // Cache it
             this.cachedInsights.set(planetName, insights);
@@ -795,225 +775,6 @@ export class PlanetExplorationDialog {
     }
 
     /**
-     * Load audio narration
-     */
-    async loadAudio(text, planetName) {
-        // Check cache
-        if (this.cachedAudio.has(planetName)) {
-            this.setupAudioPlayer(this.cachedAudio.get(planetName));
-            return;
-        }
-
-        try {
-            document.getElementById('audio-status').textContent = 'Generating audio...';
-
-            // Generate audio - returns ArrayBuffer
-            const audioArrayBuffer = await this.elevenLabsService.textToSpeech(text);
-
-            // Convert ArrayBuffer to Blob
-            const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-
-            // Cache it
-            this.cachedAudio.set(planetName, audioUrl);
-
-            // Setup player
-            this.setupAudioPlayer(audioUrl);
-        } catch (error) {
-            console.error('Error generating audio:', error);
-            document.getElementById('audio-status').textContent = 'Audio generation failed';
-        }
-    }
-
-    /**
-     * Setup audio player
-     */
-    setupAudioPlayer(audioUrl) {
-        this.audioElement = new Audio(audioUrl);
-        this.elements.audioPlayer.style.display = 'block';
-        document.getElementById('audio-status').textContent = 'Ready to play';
-
-        // Audio event listeners
-        this.audioElement.addEventListener('ended', () => {
-            this.isAudioPlaying = false;
-            document.getElementById('audio-play').style.display = 'block';
-            document.getElementById('audio-pause').style.display = 'none';
-            document.getElementById('audio-status').textContent = 'Playback complete';
-        });
-    }
-
-    /**
-     * Play audio
-     */
-    playAudio() {
-        if (this.audioElement) {
-            this.audioElement.play();
-            this.isAudioPlaying = true;
-            document.getElementById('audio-play').style.display = 'none';
-            document.getElementById('audio-pause').style.display = 'block';
-            document.getElementById('audio-status').textContent = 'Playing...';
-        }
-    }
-
-    /**
-     * Pause audio
-     */
-    pauseAudio() {
-        if (this.audioElement) {
-            this.audioElement.pause();
-            this.isAudioPlaying = false;
-            document.getElementById('audio-play').style.display = 'block';
-            document.getElementById('audio-pause').style.display = 'none';
-            document.getElementById('audio-status').textContent = 'Paused';
-        }
-    }
-
-    /**
-     * Stop audio
-     */
-    stopAudio() {
-        if (this.audioElement) {
-            this.audioElement.pause();
-            this.audioElement.currentTime = 0;
-            this.isAudioPlaying = false;
-            document.getElementById('audio-play').style.display = 'block';
-            document.getElementById('audio-pause').style.display = 'none';
-            document.getElementById('audio-status').textContent = 'Stopped';
-        }
-    }
-
-    /**
-     * Load audio narration for insights
-     */
-    async loadInsightsAudio(text, planetName) {
-        const cacheKey = `insights_${planetName} `;
-
-        console.log('loadInsightsAudio called for:', planetName);
-
-        // Check cache
-        if (this.cachedInsightsAudio.has(cacheKey)) {
-            console.log('Using cached insights audio');
-            this.setupInsightsAudioPlayer(this.cachedInsightsAudio.get(cacheKey));
-            return;
-        }
-
-        try {
-            console.log('Calling ElevenLabs textToSpeech...');
-            // Generate audio - returns ArrayBuffer
-            const audioArrayBuffer = await this.elevenLabsService.textToSpeech(text);
-            console.log('Audio ArrayBuffer received:', audioArrayBuffer);
-
-            // Convert ArrayBuffer to Blob
-            const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            console.log('Audio URL created:', audioUrl);
-
-            // Cache it
-            this.cachedInsightsAudio.set(cacheKey, audioUrl);
-
-            // Setup player
-            this.setupInsightsAudioPlayer(audioUrl);
-        } catch (error) {
-            console.error('Error generating insights audio:', error);
-
-            // Hide loading bar and show error
-            const loadingBarContainer = document.getElementById('audio-loading-bar-container');
-            if (loadingBarContainer) {
-                loadingBarContainer.innerHTML = `
-            < div class="audio-loading-error" >
-                        ❌ Audio generation failed: ${error.message}
-                    </div >
-            `;
-            }
-        }
-    }
-
-    /**
-     * Setup insights audio player
-     */
-    setupInsightsAudioPlayer(audioUrl) {
-        console.log('setupInsightsAudioPlayer called with URL:', audioUrl);
-        this.insightsAudioElement = new Audio(audioUrl);
-
-        // Hide loading bar
-        const loadingBarContainer = document.getElementById('audio-loading-bar-container');
-        if (loadingBarContainer) {
-            loadingBarContainer.style.display = 'none';
-        }
-
-        // Show audio player
-        const playerEl = document.getElementById('insights-audio-player');
-        const statusEl = document.getElementById('insights-audio-status');
-
-        console.log('Player element found:', !!playerEl);
-
-        if (playerEl) {
-            playerEl.style.display = 'block';
-        }
-
-        if (statusEl) statusEl.textContent = 'Ready to play';
-
-        // Audio event listeners
-        this.insightsAudioElement.addEventListener('ended', () => {
-            this.isInsightsAudioPlaying = false;
-            const playBtn = document.getElementById('insights-audio-play');
-            const pauseBtn = document.getElementById('insights-audio-pause');
-            if (playBtn) playBtn.style.display = 'block';
-            if (pauseBtn) pauseBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = 'Playback complete';
-        });
-    }
-
-    /**
-     * Play insights audio
-     */
-    playInsightsAudio() {
-        if (this.insightsAudioElement) {
-            this.insightsAudioElement.play();
-            this.isInsightsAudioPlaying = true;
-            const playBtn = document.getElementById('insights-audio-play');
-            const pauseBtn = document.getElementById('insights-audio-pause');
-            const statusEl = document.getElementById('insights-audio-status');
-            if (playBtn) playBtn.style.display = 'none';
-            if (pauseBtn) pauseBtn.style.display = 'block';
-            if (statusEl) statusEl.textContent = 'Playing...';
-        }
-    }
-
-    /**
-     * Pause insights audio
-     */
-    pauseInsightsAudio() {
-        if (this.insightsAudioElement) {
-            this.insightsAudioElement.pause();
-            this.isInsightsAudioPlaying = false;
-            const playBtn = document.getElementById('insights-audio-play');
-            const pauseBtn = document.getElementById('insights-audio-pause');
-            const statusEl = document.getElementById('insights-audio-status');
-            if (playBtn) playBtn.style.display = 'block';
-            if (pauseBtn) pauseBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = 'Paused';
-        }
-    }
-
-    /**
-     * Stop insights audio
-     */
-    stopInsightsAudio() {
-        if (this.insightsAudioElement) {
-            this.insightsAudioElement.pause();
-            this.insightsAudioElement.currentTime = 0;
-            this.isInsightsAudioPlaying = false;
-            const playBtn = document.getElementById('insights-audio-play');
-            const pauseBtn = document.getElementById('insights-audio-pause');
-            const statusEl = document.getElementById('insights-audio-status');
-            if (playBtn) playBtn.style.display = 'block';
-            if (pauseBtn) pauseBtn.style.display = 'none';
-            if (statusEl) statusEl.textContent = 'Stopped';
-        }
-    }
-
-    /**
      * Send a chat message to AI
      */
     async sendChatMessage(message, planetData) {
@@ -1036,7 +797,7 @@ export class PlanetExplorationDialog {
 
         try {
             // Call AI
-            const response = await this.openAIService.chatAboutPlanet(
+            const response = await this.aiService.chatAboutPlanet(
                 message,
                 planetData,
                 this.chatHistory
@@ -1107,7 +868,6 @@ export class PlanetExplorationDialog {
      * Clean up resources
      */
     destroy() {
-        this.stopAudio();
         if (this.overlay && this.overlay.parentNode) {
             this.overlay.parentNode.removeChild(this.overlay);
         }
@@ -1117,8 +877,6 @@ export class PlanetExplorationDialog {
 
         // Clear caches
         this.cachedDescriptions.clear();
-        this.cachedAudio.forEach(url => URL.revokeObjectURL(url));
-        this.cachedAudio.clear();
     }
 }
 

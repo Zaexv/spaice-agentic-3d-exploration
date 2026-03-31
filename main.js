@@ -12,11 +12,9 @@ import { PlanetHoverInfo } from './src/utils/PlanetHoverInfo.js';
 import { PlanetExplorationDialog } from './src/ui/PlanetExplorationDialog.js';
 import { PlanetTargetingSquare } from './src/ui/PlanetTargetingSquare.js';
 import { ProximityDetector } from './src/utils/ProximityDetector.js';
-import { NarrationService } from './src/services/NarrationService.js';
+import AIService from './src/ai/AIService.js';
 import { NarratorDialog } from './src/ui/NarratorDialog.js';
-import OpenAIService from './src/ai/OpenAIService.js';
-import ElevenLabsService from './src/ai/ElevenLabsService.js';
-import { CONFIG, isAIConfigured, isNarrationConfigured } from './src/config/config.js';
+import { CONFIG, isAIConfigured } from './src/config/config.js';
 import { WarpTunnel } from './src/objects/WarpTunnel.js';
 import { GalaxyField } from './src/objects/GalaxyField.js';
 import { SpaceDust } from './src/objects/SpaceDust.js';
@@ -193,33 +191,21 @@ class App {
     }
 
     initExplorationDialog() {
-        let openAIService = null;
-        let elevenLabsService = null;
+        let aiService = null;
 
         if (isAIConfigured()) {
             try {
-                openAIService = new OpenAIService(CONFIG.openai.apiKey);
+                aiService = new AIService(CONFIG.ai.apiKey);
             } catch (error) {
                 console.warn('OpenAI service not initialized:', error.message);
             }
         }
 
-        if (isNarrationConfigured()) {
-            try {
-                elevenLabsService = new ElevenLabsService(CONFIG.elevenLabs.apiKey);
-            } catch (error) {
-                console.warn('Eleven Labs service not initialized:', error.message);
-            }
-        }
-
-        this.explorationDialog = new PlanetExplorationDialog(openAIService, elevenLabsService, this);
-
+        this.explorationDialog = new PlanetExplorationDialog(aiService, this);
         this.proximityDetector = new ProximityDetector(this.planetDataService, this.exoplanetField);
-        this.narrationService = new NarrationService(openAIService, elevenLabsService);
-        this.narratorDialog = new NarratorDialog(this.narrationService);
+        this.narratorDialog = new NarratorDialog(aiService);
 
         window.planetExplorationDialog = this.explorationDialog;
-        window.narratorDialog = this.narratorDialog;
     }
 
     initTargetingSquare() {
@@ -274,36 +260,20 @@ class App {
         }
     }
 
-    async narrateClosestPlanet() {
-        if (!this.spacecraft || !this.proximityDetector || !this.narrationService || !this.narratorDialog) {
-            return;
-        }
+    narrateClosestPlanet() {
+        if (!this.spacecraft || !this.proximityDetector || !this.narratorDialog) return;
 
         if (this.narratorDialog.isShowing()) return;
 
         const closest = this.proximityDetector.getClosestPlanet(this.spacecraft.group.position);
         if (!closest) return;
 
-        const planet = closest.planet;
-
-        this.narratorDialog.container.classList.add('visible');
-        this.narratorDialog.isVisible = true;
-        this.narratorDialog.elements.planetName.textContent = planet.pl_name || 'Unknown Planet';
-        this.narratorDialog.showLoading();
-
         if (this.targetingSquare && closest.mesh) {
             const parentGroup = this.exoplanetField?.meshGroup;
-            this.targetingSquare.target(closest.mesh, planet, parentGroup);
+            this.targetingSquare.target(closest.mesh, closest.planet, parentGroup);
         }
 
-        try {
-            const { text, audio } = await this.narrationService.generateNarration(planet);
-            await this.narratorDialog.show(planet, text, audio);
-        } catch (error) {
-            console.error('Narration failed:', error);
-            this.narratorDialog.hideLoading();
-            this.narratorDialog.hide();
-        }
+        this.narratorDialog.show(closest.planet);
     }
 
     closeModal() {

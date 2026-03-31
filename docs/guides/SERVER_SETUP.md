@@ -40,7 +40,6 @@ npm run preview
 | **build** | `npm run build` | Build optimized production bundle |
 | **preview** | `npm run preview` | Preview production build locally |
 | test-ai | `npm run test-ai` | Test OpenAI service integration |
-| test-elevenlabs | `npm run test-elevenlabs` | Test ElevenLabs text-to-speech |
 | test-planet-service | `npm run test-planet-service` | Test planet data service |
 
 ## Vite Configuration

@@ -15,7 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.3",
-    "openai": "^6.17.0",
     "three": "^0.182.0"
   },
   "devDependencies": {
