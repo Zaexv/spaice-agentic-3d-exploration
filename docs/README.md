@@ -1,7 +1,6 @@
 # Documentation
 
 ## Quick Start
-- [START_HERE.md](../START_HERE.md) - Multiplayer troubleshooting
 - [README.md](../README.md) - Project overview and features
 - [Architecture.md](../Architecture.md) - System architecture
 
@@ -32,10 +31,6 @@ Located in [`guides/`](./guides/)
 - [SPAICE_SETUP.md](./guides/SPAICE_SETUP.md) - AI narrator setup
 - [SERVER_SETUP.md](./guides/SERVER_SETUP.md) - Server configuration
 - [DEPLOY_TO_GITHUB_PAGES.md](./guides/DEPLOY_TO_GITHUB_PAGES.md) - Deployment guide
-
-### Multiplayer
-- [MULTIPLAYER.md](./guides/MULTIPLAYER.md) - Multiplayer overview
-- [MULTIPLAYER_CONFIG.md](./guides/MULTIPLAYER_CONFIG.md) - Server URL configuration
 
 ### UI/UX Features
 - [UI_UX_FEATURES.md](./guides/UI_UX_FEATURES.md) - UI features

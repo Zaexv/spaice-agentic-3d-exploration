@@ -33,11 +33,6 @@ export const CONFIG = {
         baseURL: 'https://api.elevenlabs.io/v1/text-to-speech'
     },
 
-    // Multiplayer Configuration
-    multiplayer: {
-        serverUrl: getEnvVar('VITE_MULTIPLAYER_URL') || 'http://localhost:3000'
-    },
-
     // Feature flags
     features: {
         enableAI: true, // Set to false to disable AI features

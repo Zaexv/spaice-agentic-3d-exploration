@@ -18,7 +18,6 @@ import OpenAIService from './src/ai/OpenAIService.js';
 import ElevenLabsService from './src/ai/ElevenLabsService.js';
 import { CONFIG, isAIConfigured, isNarrationConfigured } from './src/config/config.js';
 import { WarpTunnel } from './src/objects/WarpTunnel.js';
-import { MultiplayerManager } from './src/multiplayer/MultiplayerManager.js';
 import { GalaxyField } from './src/objects/GalaxyField.js';
 import { SpaceDust } from './src/objects/SpaceDust.js';
 import { SpaceDebris } from './src/objects/SpaceDebris.js';
@@ -31,9 +30,6 @@ class App {
         this.canvas = document.getElementById('canvas');
         this.loadingManager = new LoadingManager();
         this.controlsEnabled = true;
-        this.multiplayerManager = null;
-        this.multiplayerEnabled = false;
-        this.multiplayerServerUrl = localStorage.getItem('multiplayerServerUrl') || CONFIG.multiplayer.serverUrl;
 
         this.init();
     }
@@ -102,9 +98,6 @@ class App {
 
             if (this.spacecraft) this.hudManager.updateViewUI(this.spacecraft);
 
-            this.initializeMultiplayerSettings();
-            this.checkMultiplayerAvailability();
-
         } catch (error) {
             console.error('Initialization error:', error);
 
@@ -124,100 +117,6 @@ class App {
                 });
             } else {
                 this.loadingManager.error(error.message);
-            }
-        }
-    }
-
-    // --- Multiplayer ---
-
-    initializeMultiplayerSettings() {
-        const urlInput = document.getElementById('multiplayer-url');
-        if (urlInput) {
-            urlInput.value = this.multiplayerServerUrl;
-
-            urlInput.addEventListener('change', (e) => {
-                const newUrl = e.target.value.trim() || CONFIG.multiplayer.serverUrl;
-                this.multiplayerServerUrl = newUrl;
-                localStorage.setItem('multiplayerServerUrl', newUrl);
-                this.checkMultiplayerAvailability();
-            });
-
-            urlInput.addEventListener('blur', (e) => {
-                const newUrl = e.target.value.trim() || CONFIG.multiplayer.serverUrl;
-                if (newUrl !== this.multiplayerServerUrl) {
-                    this.multiplayerServerUrl = newUrl;
-                    localStorage.setItem('multiplayerServerUrl', newUrl);
-                    this.checkMultiplayerAvailability();
-                }
-            });
-        }
-    }
-
-    async checkMultiplayerAvailability() {
-        const serverAvailable = await MultiplayerManager.checkServerAvailability(this.multiplayerServerUrl);
-
-        const statusEl = document.getElementById('multiplayer-status-inline');
-        const btnEl = document.getElementById('multiplayer-btn');
-
-        if (serverAvailable) {
-            if (statusEl) statusEl.textContent = 'READY';
-            if (statusEl) statusEl.style.color = '#00FF88';
-            if (btnEl) btnEl.style.borderColor = '#00FF88';
-        } else {
-            if (statusEl) statusEl.textContent = 'SERVER OFFLINE';
-            if (statusEl) statusEl.style.color = '#888';
-            if (btnEl) btnEl.style.opacity = '0.5';
-        }
-    }
-
-    async toggleMultiplayer() {
-        if (this.multiplayerEnabled) {
-            if (this.multiplayerManager) {
-                this.multiplayerManager.disconnect();
-                this.multiplayerManager = null;
-            }
-            this.multiplayerEnabled = false;
-            this.updateMultiplayerUI(false);
-        } else {
-            try {
-                this.multiplayerManager = new MultiplayerManager(this.sceneManager, this.spacecraft);
-                await this.multiplayerManager.connect(this.multiplayerServerUrl);
-                this.multiplayerEnabled = true;
-                this.updateMultiplayerUI(true);
-            } catch (error) {
-                console.error('Failed to connect to multiplayer:', error);
-                this.multiplayerManager = null;
-                this.multiplayerEnabled = false;
-                alert(`Could not connect to multiplayer server at ${this.multiplayerServerUrl}\nMake sure the server is running.`);
-            }
-        }
-    }
-
-    updateMultiplayerUI(connected) {
-        const mpBtn = document.getElementById('multiplayer-btn');
-        const mpStatus = document.getElementById('multiplayer-status-inline');
-
-        if (mpBtn) {
-            mpBtn.textContent = connected ? '🔌 Disconnect' : '🌐 Join Multiplayer';
-            if (connected) {
-                mpBtn.style.background = 'rgba(0, 255, 136, 0.3)';
-                mpBtn.style.borderColor = '#00FF88';
-                mpBtn.style.opacity = '1';
-            } else {
-                mpBtn.style.background = 'rgba(0, 217, 255, 0.2)';
-                mpBtn.style.borderColor = '#00D9FF';
-                mpBtn.style.opacity = '1';
-            }
-        }
-
-        if (mpStatus) {
-            if (connected && this.multiplayerManager) {
-                const status = this.multiplayerManager.getStatus();
-                mpStatus.textContent = `CONNECTED (${status.playerCount} players)`;
-                mpStatus.style.color = '#00FF88';
-            } else {
-                mpStatus.textContent = connected ? 'CONNECTED' : 'READY';
-                mpStatus.style.color = connected ? '#00FF88' : '#00D9FF';
             }
         }
     }
@@ -337,13 +236,6 @@ class App {
             });
         }
 
-        const mpBtn = document.getElementById('multiplayer-btn');
-        if (mpBtn) {
-            mpBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleMultiplayer();
-            });
-        }
     }
 
     // --- Actions ---
@@ -477,11 +369,6 @@ class App {
 
         if (this.targetingSquare) {
             this.targetingSquare.update(this.cameraManager.camera);
-        }
-
-        if (this.multiplayerEnabled && this.multiplayerManager) {
-            this.multiplayerManager.sendUpdate();
-            this.multiplayerManager.update(deltaTime);
         }
 
         this.rendererManager.render(

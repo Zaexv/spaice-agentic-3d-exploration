@@ -41,12 +41,12 @@ export default defineConfig({
         rollupOptions: {
             // Mark Node.js-only dependencies as external
             // They will not be bundled, and dynamic imports will fail gracefully
-            external: ['openai', 'dotenv', 'socket.io-client', 'socket.io', 'express']
+            external: ['openai', 'dotenv']
         }
     },
     optimizeDeps: {
         // Exclude these from pre-bundling
-        exclude: ['openai', 'dotenv', 'socket.io-client', 'socket.io', 'express']
+        exclude: ['openai', 'dotenv']
     }
 });
 

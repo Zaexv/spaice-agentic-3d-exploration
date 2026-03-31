@@ -2,14 +2,13 @@
 
 ## Project Overview
 
-SpAIce is an interactive 3D space exploration app built with Three.js, featuring 6,000+ NASA exoplanets, AI-powered narration (OpenAI + ElevenLabs), and real-time multiplayer (Socket.io).
+SpAIce is an interactive 3D space exploration app built with Three.js, featuring 6,000+ NASA exoplanets and AI-powered narration (OpenAI + ElevenLabs).
 
 ## Quick Reference
 
 ```bash
 npm run dev              # Start Vite dev server (http://localhost:5173)
 npm run build            # Production build (output: dist/)
-npm run multiplayer-server  # Start multiplayer server (port 3000)
 ```
 
 ## Architecture
@@ -68,9 +67,6 @@ src/
 │   ├── WebGLDetector.js        # WebGL capability check
 │   ├── logger.js               # Leveled logging (debug/info/warn/error)
 │   └── helpers.js              # Misc utilities
-├── multiplayer/
-│   ├── MultiplayerManager.js   # Socket.io client
-│   └── RemotePlayer.js         # Other player representation
 ├── shaders/
 │   └── AtmosphereShader.js     # GLSL atmosphere effect
 └── workers/
@@ -83,7 +79,6 @@ src/
 - **All configurable values** live in `src/config/config.js` (reads from `VITE_*` env vars)
 - Services import from CONFIG, never hardcode API keys, models, URLs, or voice IDs
 - `.env.example` documents all available env vars
-- Multiplayer URL: `VITE_MULTIPLAYER_URL` (falls back to `http://localhost:3000`)
 
 ### Code Patterns
 - **ES modules** throughout (`import`/`export`, `"type": "module"` in package.json)
@@ -109,7 +104,7 @@ NASA JSON clusters -> PlanetDataService.loadCluster()
 - Exoplanets use `planet.characteristics.coordinates_3d` (light-year-based)
 
 ### Build Notes
-- Vite bundles for browser; `openai`, `dotenv`, `socket.io-client`, `express` are **external** (not bundled)
+- Vite bundles for browser; `openai` and `dotenv` are **external** (not bundled)
 - OpenAI uses `dangerouslyAllowBrowser: true` (dev only - use backend proxy in prod)
 - Large NASA cluster files (>25MB) excluded from build via vite.config.js
 - Cloudflare Pages deployment (25MB per-file limit)
