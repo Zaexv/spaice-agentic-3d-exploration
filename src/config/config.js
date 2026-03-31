@@ -22,8 +22,7 @@ export const CONFIG = {
     // LLM Configuration (Gemini via OpenAI-compatible endpoint)
     openai: {
         apiKey: getEnvVar('VITE_GEMINI_API_KEY'),
-        model: getEnvVar('VITE_AI_MODEL') || 'gemini-2.0-flash',
-        baseURL: getEnvVar('VITE_AI_BASE_URL') || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+        model: getEnvVar('VITE_AI_MODEL') || 'gemini-flash-latest'
     },
 
     // Feature flags

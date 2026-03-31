@@ -1,7 +1,6 @@
 /**
- * LLMService - Gemini Integration for Planet Descriptions
+ * GeminiService - Google Gemini Integration for Planet Descriptions
  * Generates descriptive text about planets using Google Gemini API
- * (OpenAI-compatible endpoint)
  */
 
 import { CONFIG } from '../config/config.js';
@@ -16,37 +15,40 @@ class OpenAIService {
 
     this.apiKey = apiKey;
     this.enabled = true;
-    this.baseURL = CONFIG.openai.baseURL;
+    this.model = CONFIG.openai.model;
 
     this.config = {
-      model: CONFIG.openai.model,
       temperature: 0.7,
-      max_tokens: 300
+      maxOutputTokens: 1024
     };
 
     this.cache = new Map();
     this.initPromise = Promise.resolve();
 
-    console.log(`✅ LLM service initialized (${this.config.model})`);
+    console.log(`✅ LLM service initialized (${this.model})`);
   }
 
   configure(options) {
     this.config = { ...this.config, ...options };
   }
 
-  async _chatCompletion(messages, { temperature, max_tokens } = {}) {
+  async _generate(systemInstruction, userText, { temperature, maxOutputTokens } = {}) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
+
     const body = {
-      model: this.config.model,
-      temperature: temperature ?? this.config.temperature,
-      max_tokens: max_tokens ?? this.config.max_tokens,
-      messages
+      systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+      contents: [{ parts: [{ text: userText }] }],
+      generationConfig: {
+        temperature: temperature ?? this.config.temperature,
+        maxOutputTokens: maxOutputTokens ?? this.config.maxOutputTokens
+      }
     };
 
-    const response = await fetch(this.baseURL, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
+        'X-goog-api-key': this.apiKey
       },
       body: JSON.stringify(body)
     });
@@ -54,13 +56,52 @@ class OpenAIService {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const msg = errorData.error?.message || response.statusText;
-      if (response.status === 401) throw new Error('Invalid API key. Please check your credentials.');
-      if (response.status === 429) throw new Error('Rate limit exceeded. Please try again later.');
+      if (response.status === 401 || response.status === 403) throw new Error('Invalid API key. Please check your credentials.');
+      if (response.status === 429) return 'I am out of power, give me more AINergy so I can continue talking! ⚡🔋';
       throw new Error(`API error (${response.status}): ${msg}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content?.trim();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!content) throw new Error('No content in API response');
+    return content;
+  }
+
+  async _chat(systemInstruction, messages, { temperature, maxOutputTokens } = {}) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
+
+    // Convert chat history to Gemini format
+    const contents = messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
+
+    const body = {
+      systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+      contents,
+      generationConfig: {
+        temperature: temperature ?? this.config.temperature,
+        maxOutputTokens: maxOutputTokens ?? this.config.maxOutputTokens
+      }
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-goog-api-key': this.apiKey
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 429) return 'I am out of power, give me more AINergy so I can continue talking! ⚡🔋';
+      throw new Error(`API error (${response.status}): ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!content) throw new Error('No content in API response');
     return content;
   }
@@ -68,7 +109,7 @@ class OpenAIService {
   buildPrompt(planetData) {
     const planetInfo = JSON.stringify(planetData, null, 2);
 
-    return `You are an expert astronomer and science communicator. Based on the following planet data, create an engaging and informative description (2-3 paragraphs) that would captivate someone exploring this celestial body in a 3D space visualization.
+    return `Based on the following planet data, create an engaging and informative description (2-3 paragraphs) that would captivate someone exploring this celestial body in a 3D space visualization.
 
 Planet Data:
 ${planetInfo}
@@ -92,10 +133,10 @@ Write a vivid, scientifically-inspired description that highlights the unique ch
 
       const prompt = this.buildPrompt(planetData);
 
-      const description = await this._chatCompletion([
-        { role: 'system', content: 'You are an expert astronomer and science communicator who creates vivid, educational descriptions of celestial bodies.' },
-        { role: 'user', content: prompt }
-      ]);
+      const description = await this._generate(
+        'You are an expert astronomer and science communicator who creates vivid, educational descriptions of celestial bodies.',
+        prompt
+      );
 
       this.cache.set(cacheKey, description);
       return description;
@@ -113,9 +154,7 @@ Write a vivid, scientifically-inspired description that highlights the unique ch
       return this.cache.get(cacheKey);
     }
 
-    const completion = await this._chatCompletion([
-      { role: 'user', content: prompt }
-    ]);
+    const completion = await this._generate(null, prompt);
 
     if (useCache) {
       this.cache.set(cacheKey, completion);
@@ -133,7 +172,7 @@ Write a vivid, scientifically-inspired description that highlights the unique ch
       }
 
       const char = planetData.characteristics || {};
-      const prompt = `You are an expert astronomer analyzing exoplanet data. Based on the following planet characteristics, generate 4-5 thought-provoking questions that a scientist or space enthusiast might ask about this planet. Make them specific to this planet's unique features.
+      const prompt = `Based on the following planet characteristics, generate 4-5 thought-provoking questions that a scientist or space enthusiast might ask about this planet. Make them specific to this planet's unique features.
 
 Planet: ${planetData.pl_name || planetData.name}
 Distance: ${planetData.sy_dist ? (planetData.sy_dist * 3.262).toFixed(2) : 'Unknown'} light-years from Earth
@@ -155,12 +194,13 @@ HABITABILITY:
 - Toxicity Level: ${char.toxicity_percent !== undefined ? char.toxicity_percent + '%' : 'Unknown'}
 - Atmosphere: ${char.atmosphere_type || 'Unknown'}
 
-Generate 4-5 specific questions that scientists would want to answer about this planet. Format each question on a new line starting with "•". Focus on what makes this planet unique, what we could learn, how it compares to Earth, and what mysteries it presents.`;
+Generate 4-5 specific questions. Format each on a new line starting with "•". Focus on what makes this planet unique, what we could learn, how it compares to Earth, and what mysteries it presents.`;
 
-      const insights = await this._chatCompletion([
-        { role: 'system', content: 'You are an expert astronomer who generates thoughtful, scientifically relevant questions about exoplanets.' },
-        { role: 'user', content: prompt }
-      ], { temperature: 0.8, max_tokens: 300 });
+      const insights = await this._generate(
+        'You are an expert astronomer who generates thoughtful, scientifically relevant questions about exoplanets.',
+        prompt,
+        { temperature: 0.8, maxOutputTokens: 1024 }
+      );
 
       this.cache.set(cacheKey, insights);
       return insights;
@@ -177,13 +217,13 @@ Generate 4-5 specific questions that scientists would want to answer about this 
 
       const systemMessage = `You are an astronomer assistant for "${planetData.pl_name || planetData.name}". Answer briefly (1-2 sentences). Data: ${(planetData.sy_dist * 3.262).toFixed(1)}ly away, ${char.radius_position || 'Unknown type'}, ${planetData.pl_rade?.toFixed(1) || '?'}R⊕, ${planetData.pl_eqt || '?'}K, ${char.habitability_percent || 0}% habitable.`;
 
+      // Build messages for multi-turn chat
       const messages = [
-        { role: 'system', content: systemMessage },
-        ...chatHistory.slice(-6),
+        ...chatHistory.filter(m => m.role === 'user' || m.role === 'assistant').slice(-6),
         { role: 'user', content: userMessage }
       ];
 
-      return await this._chatCompletion(messages, { max_tokens: 150 });
+      return await this._chat(systemMessage, messages, { maxOutputTokens: 512 });
 
     } catch (error) {
       console.error('Error in chat:', error);

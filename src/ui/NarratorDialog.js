@@ -6,7 +6,6 @@ export class NarratorDialog {
     constructor(narrationService = null) {
         this.narrationService = narrationService;
         this.isVisible = false;
-        this.audioElement = null;
         this.currentPlanet = null;
         this.typewriterInterval = null;
         this.chatHistory = [];
@@ -81,12 +80,6 @@ export class NarratorDialog {
                             Loading narration...
                         </div>
                         
-                        <div class="narrator-audio-indicator" id="narrator-audio-indicator">
-                            <div class="audio-wave">
-                                <span></span><span></span><span></span><span></span><span></span>
-                            </div>
-                            <span class="audio-status">🔊 SpAIce is speaking...</span>
-                        </div>
                     </div>
                     
                     <!-- Chat Section -->
@@ -114,7 +107,6 @@ export class NarratorDialog {
                 </div>
                 
                 <div class="narrator-footer">
-                    <button class="narrator-action-btn" id="narrator-skip">Skip Audio</button>
                     <button class="narrator-action-btn secondary" id="narrator-minimize">Minimize</button>
                 </div>
             </div>
@@ -126,9 +118,7 @@ export class NarratorDialog {
         this.elements = {
             planetName: document.getElementById('narrator-planet-name'),
             text: document.getElementById('narrator-text'),
-            audioIndicator: document.getElementById('narrator-audio-indicator'),
             closeBtn: document.getElementById('narrator-close'),
-            skipBtn: document.getElementById('narrator-skip'),
             minimizeBtn: document.getElementById('narrator-minimize'),
             chatSection: document.getElementById('narrator-chat-section'),
             chatMessages: document.getElementById('narrator-chat-messages'),
@@ -144,12 +134,6 @@ export class NarratorDialog {
         this.elements.closeBtn.addEventListener('click', () => {
             console.log('❌ Close button clicked');
             this.hide();
-        });
-        
-        // Skip button
-        this.elements.skipBtn.addEventListener('click', () => {
-            console.log('⏭️ Skip button clicked');
-            this.skip();
         });
         
         // Minimize button
@@ -253,16 +237,7 @@ export class NarratorDialog {
         
         // Start typewriter effect for text
         this.typewriterEffect(text);
-        
-        // Play audio if available (with delay to let text start appearing)
-        if (audioBlob) {
-            setTimeout(() => {
-                this.playAudio(audioBlob);
-            }, 500);
-        } else {
-            this.elements.audioIndicator.style.display = 'none';
-        }
-        
+
         console.log('✅ show() method completed');
     }
     
@@ -290,89 +265,6 @@ export class NarratorDialog {
     }
 
     /**
-     * Play audio narration
-     */
-    async playAudio(audioBlob) {
-        // Stop any existing audio
-        this.stopAudio();
-        
-        // Show audio indicator
-        this.elements.audioIndicator.style.display = 'flex';
-        
-        // Animate chatbot face (talking)
-        if (this.elements.chatbotFace) {
-            this.elements.chatbotFace.classList.add('talking');
-        }
-        
-        // Create audio element
-        this.audioElement = new Audio();
-        this.audioElement.src = URL.createObjectURL(audioBlob);
-        
-        // Handle audio events
-        this.audioElement.addEventListener('ended', () => {
-            console.log('🎙️ Audio finished');
-            this.elements.audioIndicator.style.display = 'none';
-            
-            // Stop chatbot face animation
-            if (this.elements.chatbotFace) {
-                this.elements.chatbotFace.classList.remove('talking');
-            }
-            
-            // Auto-hide after audio ends
-            setTimeout(() => {
-                if (this.isVisible) {
-                    this.hide();
-                }
-            }, 2000); // Stay visible 2 seconds after audio ends
-        });
-        
-        this.audioElement.addEventListener('error', (e) => {
-            console.error('❌ Audio playback error:', e);
-            this.elements.audioIndicator.style.display = 'none';
-        });
-        
-        // Play audio
-        try {
-            await this.audioElement.play();
-            console.log('🔊 Audio playing');
-        } catch (error) {
-            console.error('❌ Failed to play audio:', error);
-            this.elements.audioIndicator.style.display = 'none';
-        }
-    }
-
-    /**
-     * Stop audio playback
-     */
-    stopAudio() {
-        if (this.audioElement) {
-            this.audioElement.pause();
-            this.audioElement.currentTime = 0;
-            
-            // Clean up blob URL
-            if (this.audioElement.src) {
-                URL.revokeObjectURL(this.audioElement.src);
-            }
-            
-            this.audioElement = null;
-        }
-    }
-
-    /**
-     * Skip current narration
-     */
-    skip() {
-        // Stop typewriter effect
-        if (this.typewriterInterval) {
-            clearInterval(this.typewriterInterval);
-            this.typewriterInterval = null;
-        }
-        
-        this.stopAudio();
-        this.hide();
-    }
-
-    /**
      * Hide narrator dialog completely
      */
     hide() {
@@ -385,10 +277,7 @@ export class NarratorDialog {
             clearInterval(this.typewriterInterval);
             this.typewriterInterval = null;
         }
-        
-        // Stop and clean up audio
-        this.stopAudio();
-        
+
         // Hide loading overlay
         this.hideLoading();
         
