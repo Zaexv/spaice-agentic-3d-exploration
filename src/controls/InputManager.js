@@ -36,10 +36,9 @@ class InputManager {
             );
             if (isTyping) return;
 
-            const narratorOpen = this.deps.narratorDialog && this.deps.narratorDialog.isShowing();
-            const explorationOpen = this.deps.explorationDialog && this.deps.explorationDialog.isVisible();
+            const dialogOpen = this.deps.explorationDialog && this.deps.explorationDialog.isVisible();
 
-            if (narratorOpen || explorationOpen) {
+            if (dialogOpen) {
                 if (e.code === 'ArrowUp') { this.keys.up = true; e.preventDefault(); return; }
                 if (e.code === 'ArrowDown') { this.keys.down = true; e.preventDefault(); return; }
                 if (e.code === 'ArrowLeft') { this.keys.left = true; e.preventDefault(); return; }
@@ -67,10 +66,9 @@ class InputManager {
         });
 
         window.addEventListener('keyup', (e) => {
-            const narratorOpen = this.deps.narratorDialog && this.deps.narratorDialog.isShowing();
-            const explorationOpen = this.deps.explorationDialog && this.deps.explorationDialog.isVisible();
+            const dialogOpen = this.deps.explorationDialog && this.deps.explorationDialog.isVisible();
 
-            if (narratorOpen || explorationOpen) {
+            if (dialogOpen) {
                 if (e.code === 'ArrowUp') this.keys.up = false;
                 if (e.code === 'ArrowDown') this.keys.down = false;
                 if (e.code === 'ArrowLeft') this.keys.left = false;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A browser-based 3D space exploration application that renders 6000+ real exoplanets using Three.js, with AI-powered planet descriptions (Google Gemini). Pure client-side -- no backend server.
+A browser-based 3D space exploration application that renders 6,000+ real exoplanets using Three.js, with AI-powered planet descriptions via Google Gemini. Pure client-side — no backend server.
 
 ## Technology Stack
 
@@ -18,37 +18,84 @@ A browser-based 3D space exploration application that renders 6000+ real exoplan
 
 ## System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        index.html                               │
-│                    main.js (App Orchestrator)                    │
-└──────┬──────────────┬──────────────┬──────────────┬─────────────┘
-       │              │              │              │
-       ▼              ▼              ▼              ▼
-┌─────────────┐ ┌──────────┐ ┌───────────┐ ┌─────────────────┐
-│  Core Layer │ │ Controls │ │  Objects  │ │    UI Layer     │
-├─────────────┤ ├──────────┤ ├───────────┤ ├─────────────────┤
-│ Scene       │ │ Input    │ │ Spacecraft│ │ HUDManager      │
-│ Camera      │ │ Manager  │ │ Planet    │ │ Exploration     │
-│ Renderer    │ │ Flight   │ │ Exoplanet │ │   Dialog        │
-│ PostProcess │ │ Controls │ │   Field   │ │ NarratorDialog  │
-│             │ │ Planet   │ │ StarField │ │ TargetingSquare │
-│             │ │ Navigator│ │ Galaxy    │ │ LoadingScene    │
-│             │ │ Camera   │ │ WarpTunnel│ │                 │
-│             │ │ Controller│ │ SpaceDust│ │                 │
-│             │ │          │ │ Debris   │ │                 │
-└─────────────┘ └──────────┘ └───────────┘ └─────────────────┘
-       │                          │                │
-       │              ┌───────────┘                │
-       ▼              ▼                            ▼
-┌─────────────────────────────┐    ┌──────────────────────────┐
-│       Services Layer        │    │       AI Layer           │
-├─────────────────────────────┤    ├──────────────────────────┤
-│ PlanetDataService           │    │ OpenAIService (Gemini)   │
-│   ├── PlanetClassifier      │    │   └── config.js          │
-│   ├── PlanetVisualGenerator │    │                          │
-│   └── CoordinateComputer    │    │ NarrationService         │
-└─────────────────────────────┘    └──────────────────────────┘
+```mermaid
+graph TB
+    subgraph Entry["Entry Point"]
+        HTML["index.html"]
+        MAIN["main.js<br/><i>App Orchestrator</i>"]
+    end
+
+    subgraph Core["Core Layer"]
+        SCENE["SceneManager"]
+        CAMERA["CameraManager"]
+        RENDERER["RendererManager"]
+        POST["PostProcessing"]
+    end
+
+    subgraph Controls["Controls Layer"]
+        INPUT["InputManager<br/><i>Keyboard, Mouse, Raycasting</i>"]
+        FLIGHT["FlightControls"]
+        NAV["PlanetNavigator<br/><i>Search & Teleport UI</i>"]
+        SEL["PlanetSelector"]
+        CAMCTRL["CameraController"]
+    end
+
+    subgraph Objects["3D Objects"]
+        CRAFT["Spacecraft"]
+        EXOFIELD["ExoplanetField<br/><i>6,000+ points with LOD</i>"]
+        STARS["StarField"]
+        GALAXY["GalaxyField"]
+        WARP["WarpTunnel"]
+        DUST["SpaceDust"]
+        DEBRIS["SpaceDebris"]
+        PLANET["Planet"]
+    end
+
+    subgraph Services["Services Layer"]
+        PDS["PlanetDataService"]
+        CLASS["PlanetClassifier"]
+        VIS["PlanetVisualGenerator"]
+        COORD["CoordinateComputer"]
+        NARR["NarrationService"]
+    end
+
+    subgraph AI["AI Layer"]
+        AISVC["AIService<br/><i>Google Gemini</i>"]
+        CFG["config.js<br/><i>VITE_GEMINI_API_KEY</i>"]
+    end
+
+    subgraph UI["UI Layer"]
+        HUD["HUDManager"]
+        DIALOG["PlanetExplorationDialog<br/><i>Info, AI Chat, Teleport</i>"]
+        NARRDLG["NarratorDialog"]
+        TARGET["PlanetTargetingSquare"]
+        LOADING["LoadingManager"]
+    end
+
+    HTML --> MAIN
+    MAIN --> SCENE
+    MAIN --> CAMERA
+    MAIN --> RENDERER
+    MAIN --> INPUT
+    MAIN --> HUD
+    MAIN --> PDS
+    MAIN --> CRAFT
+    MAIN --> EXOFIELD
+    MAIN --> DIALOG
+    MAIN --> NARRDLG
+
+    PDS --> CLASS
+    PDS --> VIS
+    PDS --> COORD
+    PDS --> EXOFIELD
+
+    DIALOG --> AISVC
+    NARR --> AISVC
+    AISVC --> CFG
+
+    NAV -->|teleport| CRAFT
+    INPUT -->|planet click| DIALOG
+    INPUT -->|N key| NARR
 ```
 
 ---
@@ -59,14 +106,14 @@ A browser-based 3D space exploration application that renders 6000+ real exoplan
 main.js                           App orchestrator: init, animation loop, wiring
 src/
 ├── ai/
-│   └── OpenAIService.js          Gemini text generation (uses CONFIG)
+│   └── AIService.js              Gemini text generation
 ├── config/
 │   ├── config.js                 Central config (env vars, API keys, feature flags)
 │   └── planets.js                Static planet definitions
 ├── controls/
 │   ├── InputManager.js           Keyboard + mouse + raycasting
 │   ├── FlightControls.js         Spacecraft flight physics
-│   ├── PlanetNavigator.js        Planet search/teleport UI panel
+│   ├── PlanetNavigator.js        Planet search / teleport UI
 │   ├── PlanetSelector.js         Planet selection logic
 │   ├── CameraController.js       Camera modes
 │   └── OrbitControls.js          Three.js orbit controls
@@ -78,13 +125,13 @@ src/
 ├── objects/
 │   ├── Planet.js                 Individual planet mesh + textures
 │   ├── Spacecraft.js             Player ship with flight model
-│   ├── ExoplanetField.js         Point cloud for 6000+ exoplanets with LOD
+│   ├── ExoplanetField.js         Point cloud (6,000+ exoplanets, LOD)
 │   ├── StarField.js              Background stars
 │   ├── GalaxyField.js            Galaxy background
-│   ├── WarpTunnel.js             Warp speed visual effect
+│   ├── WarpTunnel.js             Warp speed effect
 │   ├── SpaceDust.js              Particle effects
 │   ├── SpaceDebris.js            Asteroid debris
-│   ├── Star.js                   Sun/star object
+│   ├── Star.js                   Sun / star object
 │   └── Universe.js               Universe container
 ├── services/
 │   ├── PlanetDataService.js      Data loading orchestrator
@@ -116,136 +163,112 @@ src/
 
 ## Data Flow: Exoplanet Pipeline
 
-```
-NASA JSON clusters
-       │
-       ▼
-PlanetDataService.loadCluster()
-       │
-       ▼
-CoordinateComputer.computeCoordinates()    ← RA/Dec/Distance → 3D xyz
-       │
-       ▼
-PlanetClassifier.classifyPlanet()          ← radius + temp → type/subtype
-       │
-       ▼
-PlanetVisualGenerator
-  ├── generatePlanetColors()               ← type → base/detail colors
-  ├── generateAtmosphere()                 ← type → atmosphere config
-  └── generateRings()                      ← type → ring config
-       │
-       ▼
-Enriched planet objects
-       │
-       ▼
-ExoplanetField (3D point cloud with LOD)
+```mermaid
+flowchart LR
+    NASA["NASA JSON<br/>clusters"] --> PDS["PlanetDataService<br/>.loadCluster()"]
+    PDS --> COORD["CoordinateComputer<br/>.computeCoordinates()"]
+    COORD --> CLASS["PlanetClassifier<br/>.classifyPlanet()"]
+    CLASS --> VIS["PlanetVisualGenerator<br/>.generateColors()<br/>.generateAtmosphere()<br/>.generateRings()"]
+    VIS --> ENR["Enriched<br/>planet objects"]
+    ENR --> EXO["ExoplanetField<br/>(3D point cloud)"]
 ```
 
 ---
 
 ## App Initialization Sequence
 
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as App (main.js)
+    participant C as Core Managers
+    participant D as PlanetDataService
+    participant O as Scene Objects
+    participant L as Animation Loop
+
+    B->>A: Page load
+    A->>C: 1. Create Scene, Camera, Renderer
+    A->>A: 2. Create InputManager, HUDManager
+    A->>D: 3. Load NASA clusters
+    D->>D: Enrich (Coordinates → Classify → Visuals)
+    D->>O: Enriched planets → ExoplanetField
+    A->>O: 4. Create Spacecraft, Navigator, Dialogs
+    A->>A: 5. Wire TeleportController
+    A->>L: 6. Start animation loop
+
+    loop Every frame
+        L->>O: Spacecraft.steer(keys, mouse)
+        L->>O: ExoplanetField.update(dt)
+        L->>A: HUDManager.updateHUD()
+        L->>C: Renderer.render(scene, camera)
+    end
 ```
-1. Browser loads index.html
-       │
-2. main.js App constructor
-       │
-3. Create Core Managers ──────── Scene, Camera, Renderer
-       │
-4. Create Controls ──────────── InputManager, HUDManager
-       │
-5. Build Universe
-       ├── PlanetDataService.initialize()
-       ├── Load solar system + exoplanet clusters
-       ├── ExoplanetField.load()
-       └── Create Spacecraft
-       │
-6. Wire subsystems
-       ├── PlanetNavigator → TeleportController
-       ├── ExplorationDialog → OpenAIService
-       ├── InputManager.setDependencies(...)
-       └── HUDManager.setupUIControls(...)
-       │
-7. Start animation loop
-       │
-   ┌───┴───────────────────────────────┐
-   │  Every frame:                     │
-   │  1. Spacecraft.steer(keys, mouse) │
-   │  2. Spacecraft.update(dt)         │
-   │  3. ExoplanetField.update(dt)     │
-   │  4. HUDManager.updateHUD()        │
-   │  5. Effects (warp, dust, debris)  │
-   │  6. Renderer.render(scene, cam)   │
-   └───────────────────────────────────┘
+
+---
+
+## AI Integration
+
+```mermaid
+flowchart TB
+    CLICK["User clicks planet"] --> DIALOG["PlanetExplorationDialog"]
+    NKEY["User presses N key"] --> NARR["NarrationService"]
+
+    DIALOG --> GEN["AIService.generatePlanetDescription()"]
+    DIALOG --> INS["AIService.generateCharacteristicsInsights()"]
+    DIALOG --> CHAT["AIService.chatAboutPlanet()"]
+    NARR --> GEN2["AIService.generateCompletion()"]
+
+    GEN --> API["Gemini API<br/>gemini-flash-latest"]
+    INS --> API
+    CHAT --> API
+    GEN2 --> API
+
+    API --> CFG["config.js<br/>VITE_GEMINI_API_KEY"]
 ```
 
 ---
 
 ## Scale System
 
-| Domain           | Unit                  | Scale Factor  |
-|------------------|-----------------------|---------------|
-| Scene units      | 1 light-year          | 10 scene units|
-| Global multiplier| All planet positions  | 10,000x       |
-| Solar system     | Planetary positions   | AU-based      |
-| Exoplanets       | Field coordinates     | Light-year based|
-
----
-
-## AI Integration
-
-```
-User clicks planet ──► PlanetExplorationDialog
-                              │
-                              ├──► OpenAIService.generatePlanetDescription()
-                              ├──► OpenAIService.generateCharacteristicsInsights()
-                              └──► OpenAIService.chatAboutPlanet()
-                                       │
-                                       ▼
-                                  Gemini API
-                                  (gemini-flash-latest)
-                                       │
-                                       ▼
-                                  config.js
-                                  VITE_GEMINI_API_KEY
-```
-
-User presses N key ──► NarrationService.generateNarration()
-                              │
-                              └──► OpenAIService → NarratorDialog (text only)
+| Domain            | Unit                 | Scale Factor    |
+|-------------------|----------------------|-----------------|
+| Scene units       | 1 light-year         | 10 scene units  |
+| Global multiplier | All planet positions | 10,000x         |
+| Solar system      | Planetary positions  | AU-based        |
+| Exoplanets        | Field coordinates    | Light-year based|
 
 ---
 
 ## Design Patterns
 
-| Pattern                     | Where                                              | Purpose                                              |
-|-----------------------------|-----------------------------------------------------|------------------------------------------------------|
-| **Manager**                 | SceneManager, CameraManager, RendererManager        | Encapsulate Three.js subsystem setup and lifecycle    |
-| **Orchestrator**            | App class in main.js                                | Thin top-level wiring; delegates to subsystems        |
-| **Pure function extraction**| PlanetClassifier, PlanetVisualGenerator, CoordinateComputer | Stateless transforms, easy to test               |
-| **Callback-based DI**       | InputManager callbacks                              | Decouple input detection from action handling         |
-| **Configuration**           | config.js, planets.js                               | Centralize all tunables and data definitions          |
+| Pattern                      | Where                                                      | Purpose                                           |
+|------------------------------|-------------------------------------------------------------|--------------------------------------------------|
+| **Manager**                  | SceneManager, CameraManager, RendererManager                | Encapsulate Three.js subsystem lifecycle          |
+| **Orchestrator**             | App class in main.js                                        | Thin top-level wiring; delegates to subsystems    |
+| **Pure function extraction** | PlanetClassifier, PlanetVisualGenerator, CoordinateComputer | Stateless transforms, easy to test                |
+| **Callback-based DI**        | InputManager callbacks                                      | Decouple input detection from action handling     |
+| **Configuration**            | config.js, planets.js                                       | Centralize all tunables and data definitions      |
 
 ---
 
 ## Performance Strategies
 
-- **ExoplanetField LOD** -- level-of-detail rendering for 6000+ point cloud
-- **Web Worker** (textureWorker.js) -- offloads procedural texture generation off the main thread
-- **PostProcessing pipeline** -- selective effects application
-- **BufferGeometry** -- efficient GPU memory for star fields and particle systems
-- **ProximityDetector** -- spatial queries to avoid per-frame full scans
+- **ExoplanetField LOD** — level-of-detail rendering for 6,000+ point cloud
+- **Web Worker** (textureWorker.js) — offloads procedural texture generation off the main thread
+- **PostProcessing pipeline** — selective effects application
+- **BufferGeometry** — efficient GPU memory for star fields and particle systems
+- **ProximityDetector** — spatial queries to avoid per-frame full scans
 
 ---
 
 ## Security
 
 - API keys stored in `.env` (git-ignored)
-- All API calls are client-side fetch -- no secrets on a backend
+- All API calls are client-side fetch — no secrets on a backend
 - Input validation on user chat prompts
 
 ---
 
 **Last Updated**: March 2026
-**Project**: Hamburg AI Hackathon -- 3D Space Exploration
-**Version**: 2.0
+**Project**: Hamburg AI Hackathon — 3D Space Exploration
+**Version**: 2.1
