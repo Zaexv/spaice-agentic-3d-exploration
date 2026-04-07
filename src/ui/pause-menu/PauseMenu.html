@@ -1,0 +1,25 @@
+<button id="pause-btn" class="pause-btn" title="Pause / Menu" aria-label="Pause / Menu">
+  <span class="material-symbols-outlined" aria-hidden="true">pause</span>
+</button>
+
+<div id="pause-overlay" class="pause-overlay"></div>
+
+<div id="pause-modal" class="pause-modal" role="dialog" aria-modal="true" aria-label="Pause menu">
+  <div class="pause-header">
+    <button id="pause-back" class="pause-icon-btn" aria-label="Back" title="Back">←</button>
+    <div class="pause-title" id="pause-title">Menu</div>
+    <button id="pause-close" class="pause-icon-btn" aria-label="Close" title="Close">×</button>
+  </div>
+
+  <div class="pause-body">
+    <div id="pause-view-menu" class="pause-view">
+      <button id="pause-open-navigator" class="pause-action-btn">Planet Navigator</button>
+      <button id="pause-reset" class="pause-action-btn danger">Reset Game</button>
+    </div>
+
+    <div id="pause-view-navigator" class="pause-view">
+      <div class="pause-navigator-host" id="pause-navigator-host"></div>
+    </div>
+  </div>
+</div>
+

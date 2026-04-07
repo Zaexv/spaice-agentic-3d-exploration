@@ -88,27 +88,11 @@ export class HUDManager {
             }
         });
 
-        if (planetNavigator) {
-            planetNavigator.container.style.display = this.uiVisible ? 'flex' : 'none';
-        }
-
-        const toggleBtn = document.getElementById('toggle-ui-btn');
-        if (toggleBtn) {
-            toggleBtn.style.opacity = this.uiVisible ? '1' : '0.3';
-        }
-        this.helpPanel?.setEnabled?.(this.uiVisible);
-        this.flightHUD?.setEnabled?.(this.uiVisible);
-        this.axisIndicator?.setEnabled?.(this.uiVisible);
+        // Planet navigator is menu-only; never show/hide it here.
     }
 
     setupUIControls(toggleCallback, closeModalCallback) {
-        const toggleBtn = document.getElementById('toggle-ui-btn');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleCallback();
-            });
-        }
+        // UI visibility toggle button is decoupled (src/ui/ui-visibility-toggle).
 
         const modalClose = document.getElementById('modal-close');
         const modalOverlay = document.getElementById('modal-overlay');

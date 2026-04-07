@@ -63,6 +63,7 @@ class InputManager {
             if (e.code === 'KeyT') this.callbacks.onToggleNavigator?.();
             if (e.code === 'KeyH') this.callbacks.onToggleUI?.();
             if (e.code === 'KeyN') this.callbacks.onNarrateClosest?.();
+            if (e.code === 'KeyP') this.callbacks.onOpenMenu?.();
             if (e.code === 'Escape') {
                 this.callbacks.onCloseNavigator?.();
                 this.callbacks.onUntarget?.();

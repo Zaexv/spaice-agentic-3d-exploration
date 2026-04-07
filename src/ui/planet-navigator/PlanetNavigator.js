@@ -1,11 +1,16 @@
 /**
- * PlanetNavigator - Simple, prominent GUI for quick planet navigation
- * Always visible, easy to use interface
+ * PlanetNavigator - UI for quick planet navigation
+ *
+ * Decoupled into src/ui/planet-navigator (HTML/CSS/JS).
+ * Still exposes `container` so other UIs (pause menu) can embed it.
  */
+import template from './PlanetNavigator.html?raw';
+import './PlanetNavigator.css';
+
 export class PlanetNavigator {
     constructor(planetDataService, onPlanetSelect) {
         this.dataService = planetDataService;
-        this.onPlanetSelect = onPlanetSelect; // Callback when user clicks GO
+        this.onPlanetSelect = onPlanetSelect;
         this.nearbyPlanets = [];
         this.filteredPlanets = [];
         this.currentPage = 0;
@@ -16,79 +21,42 @@ export class PlanetNavigator {
     }
 
     createUI() {
-        // Main container - always visible on right side
         this.container = document.createElement('div');
         this.container.id = 'planet-navigator';
         this.container.className = 'planet-navigator';
-
-        this.container.innerHTML = `
-            <div class="nav-header">
-                <div>
-                    <h2>🌍 PLANET NAVIGATOR</h2>
-                </div>
-            </div>
-            
-            <div class="nav-search">
-                <input 
-                    type="text" 
-                    id="nav-search" 
-                    placeholder="🔍 Search planets..."
-                    class="nav-search-input"
-                />
-            </div>
-            
-            <div class="nav-filters">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="habitable">Habitable</button>
-                <button class="filter-btn" data-filter="nearby">Nearby</button>
-            </div>
-
-            
-            <div id="nav-planet-list" class="nav-planet-list">
-                <div class="nav-loading">Loading planets...</div>
-            </div>
-            
-            <div class="nav-pagination">
-                <button id="nav-prev" class="nav-btn">« Prev</button>
-                <span id="nav-page-info" class="nav-page-info">Page 1</span>
-                <button id="nav-next" class="nav-btn">Next »</button>
-            </div>
-            
-            <div class="nav-footer">
-                <button id="nav-toggle" class="nav-toggle-btn">◀ Minimize</button>
-            </div>
-        `;
-
+        this.container.innerHTML = template;
         document.body.appendChild(this.container);
     }
 
     attachEventListeners() {
         // Search
-        document.getElementById('nav-search').addEventListener('input', (e) => {
-            this.handleSearch(e.target.value);
-        });
+        const search = this.container.querySelector('#nav-search');
+        if (search) {
+            search.addEventListener('input', (e) => this.handleSearch(e.target.value));
+        }
 
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Filter buttons (scoped)
+        this.container.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.applyFilter(btn.dataset.filter);
             });
         });
 
         // Pagination
-        document.getElementById('nav-prev').addEventListener('click', () => this.prevPage());
-        document.getElementById('nav-next').addEventListener('click', () => this.nextPage());
+        const prev = this.container.querySelector('#nav-prev');
+        const next = this.container.querySelector('#nav-next');
+        if (prev) prev.addEventListener('click', () => this.prevPage());
+        if (next) next.addEventListener('click', () => this.nextPage());
 
-        // Toggle minimize
-        document.getElementById('nav-toggle').addEventListener('click', () => this.toggle());
+        // Toggle minimize (kept for compatibility; pause-menu hides it)
+        const toggle = this.container.querySelector('#nav-toggle');
+        if (toggle) toggle.addEventListener('click', () => this.toggle());
 
         // Click container when minimized to expand
         this.container.addEventListener('click', (e) => {
-            // Only expand if minimized and not clicking the toggle button
-            if (this.container.classList.contains('minimized') &&
-                !e.target.closest('#nav-toggle')) {
+            if (this.container.classList.contains('minimized') && !e.target.closest('#nav-toggle')) {
                 this.show();
             }
         });
@@ -98,12 +66,10 @@ export class PlanetNavigator {
         try {
             console.log('🗺️ Navigator: Waiting for all planet data...');
 
-            // Get initial count
             this.nearbyPlanets = this.dataService.getAllPlanets();
             this.filteredPlanets = this.nearbyPlanets;
             this.renderPlanetList();
 
-            // Update display every 2 seconds as more planets load
             const updateInterval = setInterval(() => {
                 const currentCount = this.dataService.getAllPlanets().length;
                 if (currentCount > this.nearbyPlanets.length) {
@@ -114,15 +80,9 @@ export class PlanetNavigator {
                 }
             }, 2000);
 
-            // Wait for all clusters to be loaded by the main system
-            // The ExoplanetField is loading clusters progressively
-            // We just need to wait until it's done
             await this.waitForAllClusters();
-
-            // Stop the update interval
             clearInterval(updateInterval);
 
-            // Final update
             this.nearbyPlanets = this.dataService.getAllPlanets();
             this.filteredPlanets = this.nearbyPlanets;
             const stats = this.dataService.getStats();
@@ -130,7 +90,7 @@ export class PlanetNavigator {
             this.renderPlanetList();
         } catch (error) {
             console.error('❌ Navigator: Error loading planets:', error);
-            const listElement = document.getElementById('nav-planet-list');
+            const listElement = this.container.querySelector('#nav-planet-list');
             if (listElement) {
                 listElement.innerHTML = `
                     <div class="nav-error">
@@ -143,7 +103,6 @@ export class PlanetNavigator {
     }
 
     async waitForAllClusters() {
-        // Wait until the cluster index says all clusters are loaded
         const clusterIndex = await this.dataService.initialize();
         const totalClusters = Object.keys(clusterIndex.clusters).length;
 
@@ -160,7 +119,6 @@ export class PlanetNavigator {
                 }
             }, 1000);
 
-            // Timeout after 60 seconds
             setTimeout(() => {
                 clearInterval(checkInterval);
                 const stats = this.dataService.getStats();
@@ -186,14 +144,10 @@ export class PlanetNavigator {
 
         switch (filter) {
             case 'habitable':
-                this.nearbyPlanets = allPlanets.filter(p =>
-                    (p.characteristics?.habitability_percent || 0) > 50
-                );
+                this.nearbyPlanets = allPlanets.filter(p => (p.characteristics?.habitability_percent || 0) > 50);
                 break;
             case 'nearby':
-                this.nearbyPlanets = allPlanets.filter(p =>
-                    (p.sy_dist || 0) * 3.262 < 100 // Less than 100 light years
-                );
+                this.nearbyPlanets = allPlanets.filter(p => (p.sy_dist || 0) * 3.262 < 100);
                 break;
             default:
                 this.nearbyPlanets = allPlanets;
@@ -205,7 +159,8 @@ export class PlanetNavigator {
     }
 
     renderPlanetList() {
-        const list = document.getElementById('nav-planet-list');
+        const list = this.container.querySelector('#nav-planet-list');
+        if (!list) return;
 
         if (!this.filteredPlanets || this.filteredPlanets.length === 0) {
             const stats = this.dataService.getStats();
@@ -250,7 +205,6 @@ export class PlanetNavigator {
                         <div class="nav-planet-name">${name}</div>
                         <button class="nav-go-btn" data-planet-name="${name}">GO →</button>
                     </div>
-                    
                     <div class="nav-planet-details">
                         <div class="nav-detail-row">
                             <span class="nav-label">📍 Distance:</span>
@@ -276,7 +230,6 @@ export class PlanetNavigator {
                             <span class="nav-label">🪨 Material:</span>
                             <span class="nav-value nav-value-small">${material}</span>
                         </div>
-                        
                         <div class="nav-metrics">
                             <div class="nav-metric">
                                 <span class="nav-metric-label">Habitability</span>
@@ -298,27 +251,24 @@ export class PlanetNavigator {
             `;
         }).join('');
 
-        // Attach GO button handlers
         list.querySelectorAll('.nav-go-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const planetName = btn.dataset.planetName;
                 const planet = this.dataService.getPlanetByName(planetName);
-                if (planet && this.onPlanetSelect) {
-                    this.onPlanetSelect(planet);
-                }
+                if (planet && this.onPlanetSelect) this.onPlanetSelect(planet);
             });
         });
 
-        // Update pagination
         this.updatePagination();
     }
 
     updatePagination() {
         const totalPages = Math.ceil(this.filteredPlanets.length / this.planetsPerPage);
-        const pageInfo = document.getElementById('nav-page-info');
-        const prevBtn = document.getElementById('nav-prev');
-        const nextBtn = document.getElementById('nav-next');
+        const pageInfo = this.container.querySelector('#nav-page-info');
+        const prevBtn = this.container.querySelector('#nav-prev');
+        const nextBtn = this.container.querySelector('#nav-next');
+        if (!pageInfo || !prevBtn || !nextBtn) return;
 
         const startIdx = this.currentPage * this.planetsPerPage + 1;
         const endIdx = Math.min((this.currentPage + 1) * this.planetsPerPage, this.filteredPlanets.length);
@@ -345,22 +295,21 @@ export class PlanetNavigator {
 
     toggle() {
         this.container.classList.toggle('minimized');
-        const toggleBtn = document.getElementById('nav-toggle');
-        if (this.container.classList.contains('minimized')) {
-            toggleBtn.textContent = '▶ Show';
-        } else {
-            toggleBtn.textContent = '◀ Minimize';
-        }
+        const toggleBtn = this.container.querySelector('#nav-toggle');
+        if (!toggleBtn) return;
+        toggleBtn.textContent = this.container.classList.contains('minimized') ? '▶ Show' : '◀ Minimize';
     }
 
     show() {
         this.container.classList.remove('minimized');
-        document.getElementById('nav-toggle').textContent = '◀ Minimize';
+        const toggleBtn = this.container.querySelector('#nav-toggle');
+        if (toggleBtn) toggleBtn.textContent = '◀ Minimize';
     }
 
     hide() {
         this.container.classList.add('minimized');
-        document.getElementById('nav-toggle').textContent = '▶ Show';
+        const toggleBtn = this.container.querySelector('#nav-toggle');
+        if (toggleBtn) toggleBtn.textContent = '▶ Show';
     }
 
     dispose() {
@@ -369,3 +318,4 @@ export class PlanetNavigator {
         }
     }
 }
+

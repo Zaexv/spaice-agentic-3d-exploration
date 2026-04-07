@@ -1,0 +1,54 @@
+.ui-visibility-btn {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    left: calc(var(--spacing-lg) + 44px);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 212, 255, 0.35);
+    background: rgba(0, 0, 0, 0.25);
+    color: rgba(0, 212, 255, 0.9);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 12000;
+    pointer-events: auto;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.12);
+}
+
+.ui-visibility-btn:hover {
+    background: rgba(0, 212, 255, 0.12);
+}
+
+.ui-visibility-btn .material-symbols-outlined {
+    font-size: 18px;
+    line-height: 1;
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+
+/* Hide ALL UI completely when UI is hidden */
+body.ui-hidden .ui-panel,
+body.ui-hidden .cockpit-overlay,
+body.ui-hidden .spaice-floating-btn,
+body.ui-hidden .help-panel-root,
+body.ui-hidden .flight-hud-root,
+body.ui-hidden .axis-indicator-root,
+body.ui-hidden .pause-overlay,
+body.ui-hidden .pause-modal,
+body.ui-hidden #modal-overlay,
+body.ui-hidden #planet-modal {
+    display: none !important;
+}
+
+/* Keep eye + pause visible but dimmed */
+body.ui-hidden #ui-visibility-btn,
+body.ui-hidden #pause-btn {
+    opacity: 0.45;
+}
+
+/* Help button should disappear when UI hidden */
+body.ui-hidden #controls-help-btn {
+    display: none !important;
+}
+
