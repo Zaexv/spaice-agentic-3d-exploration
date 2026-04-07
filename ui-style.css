@@ -79,58 +79,6 @@
 }
 
 /* ========================================
-   TOP LEFT - FLIGHT HUD
-   ======================================== */
-
-#flight-hud {
-    top: var(--spacing-lg);
-    left: var(--spacing-lg);
-    min-width: 280px;
-}
-
-.hud-section {
-    margin-bottom: var(--spacing-md);
-}
-
-.hud-section:last-child {
-    margin-bottom: 0;
-}
-
-.hud-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-xs);
-}
-
-.hud-value {
-    font-size: 18px;
-    font-family: var(--font-mono);
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-.hud-value.large {
-    font-size: 24px;
-}
-
-.hud-value.accent {
-    color: var(--accent-blue);
-}
-
-.hud-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
-}
-
-.hud-grid-item {
-    text-align: center;
-}
-
-/* ========================================
    TOP RIGHT - MISSION STATUS (REMOVED)
    ======================================== */
 

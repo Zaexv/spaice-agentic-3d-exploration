@@ -6,6 +6,8 @@ export class HUDManager {
     constructor() {
         this.uiVisible = true;
         this.helpPanel = null;
+        this.flightHUD = null;
+        this.axisIndicator = null;
     }
 
     setHelpPanel(helpPanel) {
@@ -13,7 +15,17 @@ export class HUDManager {
         this.helpPanel?.setEnabled?.(this.uiVisible);
     }
 
-    updateHUD(spacecraft, targetingSquare) {
+    setFlightHUD(flightHUD) {
+        this.flightHUD = flightHUD;
+        this.flightHUD?.setEnabled?.(this.uiVisible);
+    }
+
+    setAxisIndicator(axisIndicator) {
+        this.axisIndicator = axisIndicator;
+        this.axisIndicator?.setEnabled?.(this.uiVisible);
+    }
+
+    updateHUD(spacecraft, targetingSquare, camera) {
         if (!spacecraft) return;
 
         const position = spacecraft.group.position;
@@ -38,6 +50,8 @@ export class HUDManager {
             heading.textContent = `${degrees.toFixed(1)}°`;
         }
 
+        // Update axis gizmo from camera (world axes relative to screen)
+        this.axisIndicator?.updateFromCamera?.(camera);
         this.updateTargetDisplay(targetingSquare);
     }
 
@@ -83,6 +97,8 @@ export class HUDManager {
             toggleBtn.style.opacity = this.uiVisible ? '1' : '0.3';
         }
         this.helpPanel?.setEnabled?.(this.uiVisible);
+        this.flightHUD?.setEnabled?.(this.uiVisible);
+        this.axisIndicator?.setEnabled?.(this.uiVisible);
     }
 
     setupUIControls(toggleCallback, closeModalCallback) {

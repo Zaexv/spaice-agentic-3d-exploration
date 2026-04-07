@@ -23,6 +23,8 @@ import { InputManager } from './src/controls/InputManager.js';
 import { HUDManager } from './src/ui/HUDManager.js';
 import { TeleportController } from './src/utils/TeleportController.js';
 import { HelpPanel } from './src/ui/help-panel/HelpPanel.js';
+import { FlightHUD } from './src/ui/flight-hud/FlightHUD.js';
+import { AxisIndicator } from './src/ui/axis-indicator/AxisIndicator.js';
 
 class App {
     constructor() {
@@ -53,6 +55,12 @@ class App {
             this.helpPanel = new HelpPanel();
             this.helpPanel.mountToDOM();
             this.hudManager.setHelpPanel(this.helpPanel);
+            this.flightHUD = new FlightHUD();
+            this.flightHUD.mountToDOM();
+            this.hudManager.setFlightHUD(this.flightHUD);
+            this.axisIndicator = new AxisIndicator();
+            this.axisIndicator.mountToDOM();
+            this.hudManager.setAxisIndicator(this.axisIndicator);
             this.inputManager = new InputManager(this.canvas, {
                 onViewToggle: () => this.handleViewToggle(),
                 onToggleNavigator: () => this.togglePlanetNavigator(),
@@ -338,7 +346,7 @@ class App {
             this.spacecraft.update(deltaTime, nearbyObjects);
             this.spacecraft.updateCamera(this.cameraManager.camera);
 
-            this.hudManager.updateHUD(this.spacecraft, this.targetingSquare);
+            this.hudManager.updateHUD(this.spacecraft, this.targetingSquare, this.cameraManager.camera);
         }
 
         if (this.planetHoverInfo) {

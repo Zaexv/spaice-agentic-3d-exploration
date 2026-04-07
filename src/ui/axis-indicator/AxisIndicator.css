@@ -1,0 +1,29 @@
+.ui-hideable.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Axis indicator - top center */
+.axis-indicator {
+    position: fixed;
+    top: var(--spacing-sm);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55));
+    overflow: visible;
+}
+
+.axis-canvas {
+    width: var(--axis-size, 87px);
+    height: var(--axis-size, 87px);
+    background: rgba(0, 0, 0, 0.0);
+    display: block;
+    overflow: visible;
+}
+
