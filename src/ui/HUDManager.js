@@ -5,6 +5,12 @@
 export class HUDManager {
     constructor() {
         this.uiVisible = true;
+        this.helpPanel = null;
+    }
+
+    setHelpPanel(helpPanel) {
+        this.helpPanel = helpPanel;
+        this.helpPanel?.setEnabled?.(this.uiVisible);
     }
 
     updateHUD(spacecraft, targetingSquare) {
@@ -76,6 +82,7 @@ export class HUDManager {
         if (toggleBtn) {
             toggleBtn.style.opacity = this.uiVisible ? '1' : '0.3';
         }
+        this.helpPanel?.setEnabled?.(this.uiVisible);
     }
 
     setupUIControls(toggleCallback, closeModalCallback) {
@@ -101,5 +108,7 @@ export class HUDManager {
                 closeModalCallback();
             });
         }
+
+        // Help panel owns its own DOM + events (src/ui/help-panel).
     }
 }

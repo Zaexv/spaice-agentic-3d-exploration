@@ -1,0 +1,105 @@
+.controls-help-btn {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    left: var(--spacing-lg);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+    font-size: 18px;
+    line-height: 34px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 1100;
+    pointer-events: auto;
+    box-shadow: var(--panel-shadow);
+    backdrop-filter: blur(10px);
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.controls-help-btn:hover {
+    transform: scale(1.06);
+    background: rgba(0, 217, 255, 0.12);
+}
+
+.controls-help-btn:active {
+    transform: scale(1.02);
+}
+
+#controls-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 520px;
+    max-width: calc(100vw - 32px);
+    max-height: 80vh;
+    border: 2px solid var(--accent-blue);
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+    z-index: 10200;
+    pointer-events: auto;
+    display: none;
+    flex-direction: column;
+}
+
+#controls-modal.visible {
+    display: flex;
+}
+
+#controls-modal-overlay {
+    display: none;
+}
+
+#controls-modal-overlay.visible {
+    display: block;
+}
+
+#controls-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+}
+
+.modal-close-x {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    font-size: 22px;
+    line-height: 30px;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+
+.modal-close-x:hover {
+    background: rgba(0, 217, 255, 0.12);
+    border-color: rgba(0, 217, 255, 0.6);
+    transform: scale(1.04);
+}
+
+.modal-close-x:active {
+    transform: scale(1.01);
+}
+
+.help-body-text {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.help-bullets {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+

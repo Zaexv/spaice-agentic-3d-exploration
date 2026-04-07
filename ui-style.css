@@ -136,16 +136,6 @@
 
 /* Mission status UI has been removed from index.html */
 
-/* ========================================
-   BOTTOM LEFT - CONTROLS REFERENCE
-   ======================================== */
-
-#controls-panel {
-    bottom: var(--spacing-lg);
-    left: var(--spacing-lg);
-    min-width: 280px;
-}
-
 .control-group {
     margin-bottom: var(--spacing-md);
 }

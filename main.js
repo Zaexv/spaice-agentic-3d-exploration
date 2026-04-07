@@ -22,6 +22,7 @@ import { CONFIG, isAIConfigured } from './src/config/config.js';
 import { InputManager } from './src/controls/InputManager.js';
 import { HUDManager } from './src/ui/HUDManager.js';
 import { TeleportController } from './src/utils/TeleportController.js';
+import { HelpPanel } from './src/ui/help-panel/HelpPanel.js';
 
 class App {
     constructor() {
@@ -49,6 +50,9 @@ class App {
             // Step 2: Setup controls
             this.loadingManager.updateStatus('Configuring Controls', 'Mapping keyboard and mouse...');
             this.hudManager = new HUDManager();
+            this.helpPanel = new HelpPanel();
+            this.helpPanel.mountToDOM();
+            this.hudManager.setHelpPanel(this.helpPanel);
             this.inputManager = new InputManager(this.canvas, {
                 onViewToggle: () => this.handleViewToggle(),
                 onToggleNavigator: () => this.togglePlanetNavigator(),
