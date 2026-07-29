@@ -1,6 +1,6 @@
 /**
  * ProximityDetector - Detects closest planet to spacecraft
- * Uses AU_TO_SCENE and LY_TO_SCENE for coordinate conversion
+ * Uses AU_TO_SCENE for solar planets, LY_TO_SCENE for exoplanets.
  */
 import * as THREE from 'three';
 import { AU_TO_SCENE, LY_TO_SCENE } from '../config/SceneConstants.js';
@@ -13,7 +13,7 @@ export class ProximityDetector {
         this.lastClosestPlanet = null;
         this.updateThrottle = 500; // ms between updates
         this.lastUpdateTime = 0;
-        this.searchRadius = 1000000; // Works for both modes
+        this.searchRadius = 5_000_000; // Unified scale — covers ~250 LY
     }
 
     /**
@@ -76,15 +76,9 @@ export class ProximityDetector {
                 // Try to find the mesh for this planet
                 let foundMesh = null;
 
-                // Check solar system group first
-                if (isSolarPlanet && this.solarSystemField && this.solarSystemField.group) {
-                    this.solarSystemField.group.traverse((child) => {
-                        if (child.isMesh && child.userData && child.userData.planetData) {
-                            if (child.userData.planetData.pl_name === planet.pl_name) {
-                                foundMesh = child;
-                            }
-                        }
-                    });
+                if (isSolarPlanet) {
+                    const meshName = planet.pl_name || planet.name;
+                    foundMesh = this.solarSystemField?.bodyMeshes?.get(meshName) || null;
                 }
 
                 // Check exoplanet field

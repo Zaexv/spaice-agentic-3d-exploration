@@ -69,10 +69,11 @@ export class RendererManager {
     }
 
     render(scene, camera) {
-        // Direct rendering — no post-processing.
-        // PostProcessing (bloom, film grain) was causing blinking artifacts
-        // with logarithmic depth buffer at astronomical scales.
-        this.renderer.render(scene, camera);
+        if (this.composer) {
+            this.composer.render();
+        } else {
+            this.renderer.render(scene, camera);
+        }
     }
 
     updateSize(canvas) {

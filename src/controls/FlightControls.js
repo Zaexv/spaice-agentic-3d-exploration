@@ -3,6 +3,9 @@
  * Handles keyboard and mouse input for spacecraft flight
  */
 
+import { CONFIG } from '../config/config.js';
+import { logger } from '../utils/logger.js';
+
 export class FlightControls {
     constructor(canvas) {
         this.canvas = canvas;
@@ -16,6 +19,8 @@ export class FlightControls {
             rollRight: false,    // D or Right
             yawLeft: false,      // Q
             yawRight: false,     // E
+            pitchUp: false,      // I
+            pitchDown: false,    // K
             boost: false,        // Space
             slowMode: false,     // Shift
             speedUp: false,      // + or =
@@ -23,7 +28,8 @@ export class FlightControls {
         };
 
         // Mouse control
-        this.mouseSensitivity = 0.002;
+        this.mouseSensitivity = CONFIG.controls?.mouseSensitivity ?? 0.002;
+        this.pointerLockEnabled = CONFIG.controls?.pointerLockEnabled ?? true;
         this.mouseMovement = { x: 0, y: 0 };
         this.isMouseLocked = false;
 
@@ -53,7 +59,7 @@ export class FlightControls {
         document.addEventListener('pointerlockchange', this.onPointerLockChange);
         this.canvas.addEventListener('click', this.onCanvasClick);
 
-        console.log('Flight controls enabled');
+        logger.info('Flight controls enabled');
     }
 
     /**
@@ -72,7 +78,7 @@ export class FlightControls {
         // Reset all keys
         Object.keys(this.keys).forEach(key => this.keys[key] = false);
 
-        console.log('Flight controls disabled');
+        logger.info('Flight controls disabled');
     }
 
     /**
@@ -101,6 +107,12 @@ export class FlightControls {
                 break;
             case 'KeyE':
                 this.keys.yawRight = true;
+                break;
+            case 'KeyI':
+                this.keys.pitchUp = true;
+                break;
+            case 'KeyK':
+                this.keys.pitchDown = true;
                 break;
             case 'Space':
                 this.keys.boost = true;
@@ -148,9 +160,17 @@ export class FlightControls {
             case 'KeyE':
                 this.keys.yawRight = false;
                 break;
+            case 'KeyI':
+                this.keys.pitchUp = false;
+                break;
+            case 'KeyK':
+                this.keys.pitchDown = false;
+                break;
             case 'Space':
                 this.keys.boost = false;
                 break;
+            case 'ShiftLeft':
+            case 'ShiftRight':
                 this.keys.slowMode = false;
                 break;
             case 'Equal':
@@ -191,7 +211,7 @@ export class FlightControls {
      * Canvas click - request pointer lock for immersive control
      */
     onCanvasClick() {
-        if (!this.isMouseLocked) {
+        if (this.pointerLockEnabled && !this.isMouseLocked) {
             this.canvas.requestPointerLock();
         }
     }
@@ -202,9 +222,9 @@ export class FlightControls {
     onPointerLockChange() {
         this.isMouseLocked = document.pointerLockElement === this.canvas;
         if (this.isMouseLocked) {
-            console.log('Mouse locked - immersive flight mode');
+            logger.debug('Mouse locked - immersive flight mode');
         } else {
-            console.log('Mouse unlocked - press ESC to exit, click canvas to re-lock');
+            logger.debug('Mouse unlocked - press ESC to exit, click canvas to re-lock');
             this.mouseMovement.x = 0;
             this.mouseMovement.y = 0;
         }
@@ -232,8 +252,11 @@ export class FlightControls {
         // Combine mouse and keyboard yaw
         const yaw = yawKeys + this.mouseMovement.x;
 
-        // Pitch from mouse
-        const pitch = this.mouseMovement.y;
+        // Combine mouse and keyboard pitch
+        let pitchKeys = 0;
+        if (this.keys.pitchUp) pitchKeys -= 1;
+        if (this.keys.pitchDown) pitchKeys += 1;
+        const pitch = pitchKeys + this.mouseMovement.y;
 
         // Boost
         const boost = this.keys.boost;
@@ -257,7 +280,6 @@ export class FlightControls {
             pitch,
             yaw,
             roll,
-            boost,
             boost,
             slowMode,
             speedUp: this.keys.speedUp,

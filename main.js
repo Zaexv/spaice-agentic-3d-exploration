@@ -18,7 +18,6 @@ import { ProximityDetector } from './src/utils/ProximityDetector.js';
 import AIService from './src/ai/AIService.js';
 import { NarratorDialog } from './src/ui/NarratorDialog.js';
 import { CONFIG, isAIConfigured } from './src/config/config.js';
-// WarpTunnel removed — clean space view
 import { InputManager } from './src/controls/InputManager.js';
 import { HUDManager } from './src/ui/HUDManager.js';
 import { TeleportController } from './src/utils/TeleportController.js';
@@ -28,7 +27,6 @@ class App {
         this.canvas = document.getElementById('canvas');
         this.loadingManager = new LoadingManager();
         this.controlsEnabled = true;
-        this._solarMode = true;
 
         this.init();
     }
@@ -44,6 +42,7 @@ class App {
             this.rendererManager = new RendererManager(this.canvas);
             this.clock = new THREE.Clock();
             this.sceneManager.add(this.cameraManager.camera);
+            this.rendererManager.initPostProcessing(this.sceneManager.getScene(), this.cameraManager.getCamera());
             this.loadingManager.completeStep('Engine');
 
             // Step 2: Setup controls
@@ -203,7 +202,7 @@ class App {
             try {
                 aiService = new AIService(CONFIG.ai.apiKey);
             } catch (error) {
-                console.warn('OpenAI service not initialized:', error.message);
+                console.warn('AI service not initialized:', error.message);
             }
         }
 
@@ -319,7 +318,8 @@ class App {
 
         // Update solar system positions from ephemeris
         if (this.solarSystemField) {
-            this.solarSystemField.update(deltaTime);
+            const camPos = this.cameraManager?.camera?.position;
+            this.solarSystemField.update(deltaTime, camPos);
         }
 
         if (this.exoplanetField) {
@@ -345,35 +345,7 @@ class App {
             this.targetingSquare.update(this.cameraManager.camera);
         }
 
-        // ─── Adaptive Scale: Switch between solar and interstellar mode ─────
-        if (this.spacecraft && this.solarSystemField && this.exoplanetField) {
-            const distFromSun = this.spacecraft.group.position.length();
-            const THRESHOLD = 600000; // SOLAR_MODE_RADIUS from SceneConstants
-
-            if (distFromSun < THRESHOLD) {
-                // SOLAR MODE
-                if (!this._solarMode) {
-                    this._solarMode = true;
-                    this.solarSystemField.group.visible = true;
-                    this.exoplanetField.meshGroup.visible = false;
-                    this.cameraManager.camera.near = 1;
-                    this.cameraManager.camera.far = 2000000;
-                    this.cameraManager.camera.updateProjectionMatrix();
-                }
-            } else {
-                // INTERSTELLAR MODE
-                if (this._solarMode !== false) {
-                    this._solarMode = false;
-                    this.solarSystemField.group.visible = false;
-                    this.exoplanetField.meshGroup.visible = true;
-                    this.cameraManager.camera.near = 1;
-                    this.cameraManager.camera.far = 20000000;
-                    this.cameraManager.camera.updateProjectionMatrix();
-                }
-            }
-            // Stars always visible
-            if (this.realStarField?.mesh) this.realStarField.mesh.visible = true;
-        }
+        // Unified scale — solar system and exoplanets always visible, no switching
 
         this.rendererManager.render(
             this.sceneManager.scene,

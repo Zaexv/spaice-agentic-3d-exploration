@@ -1,67 +1,77 @@
 {
-  "total_planets": 6027,
-  "total_clusters": 15,
-  "generated_date": "2026-04-06",
+  "total_planets": 6126,
+  "total_clusters": 17,
+  "generated_date": "2026-04-07",
+  "coordinate_system": "Heliocentric J2000 Equatorial (ICRS), Cartesian, light-years",
+  "position_fields": "x_ly, y_ly, z_ly (light-years from Sun)",
   "clusters": {
     "far_quad1": {
       "filename": "far_quad1.json",
-      "planet_count": 37
+      "planet_count": 241
     },
     "far_quad2": {
       "filename": "far_quad2.json",
-      "planet_count": 86
+      "planet_count": 308
     },
     "far_quad3": {
       "filename": "far_quad3.json",
-      "planet_count": 63
+      "planet_count": 232
     },
     "far_quad4": {
       "filename": "far_quad4.json",
-      "planet_count": 2035
+      "planet_count": 1230
     },
     "medium_quad1": {
       "filename": "medium_quad1.json",
-      "planet_count": 317
+      "planet_count": 370
     },
     "medium_quad2": {
       "filename": "medium_quad2.json",
-      "planet_count": 357
+      "planet_count": 342
     },
     "medium_quad3": {
       "filename": "medium_quad3.json",
-      "planet_count": 324
+      "planet_count": 338
     },
     "medium_quad4": {
       "filename": "medium_quad4.json",
-      "planet_count": 986
+      "planet_count": 353
     },
     "nearby_quad1": {
       "filename": "nearby_quad1.json",
-      "planet_count": 403
+      "planet_count": 135
     },
     "nearby_quad2": {
       "filename": "nearby_quad2.json",
-      "planet_count": 392
+      "planet_count": 136
     },
     "nearby_quad3": {
       "filename": "nearby_quad3.json",
-      "planet_count": 343
+      "planet_count": 132
     },
     "nearby_quad4": {
       "filename": "nearby_quad4.json",
-      "planet_count": 368
+      "planet_count": 128
+    },
+    "veryfar_quad1": {
+      "filename": "veryfar_quad1.json",
+      "planet_count": 21
     },
     "veryfar_quad2": {
       "filename": "veryfar_quad2.json",
-      "planet_count": 4
+      "planet_count": 59
     },
     "veryfar_quad3": {
       "filename": "veryfar_quad3.json",
-      "planet_count": 189
+      "planet_count": 224
     },
     "veryfar_quad4": {
       "filename": "veryfar_quad4.json",
-      "planet_count": 123
+      "planet_count": 1877
+    },
+    "no_position": {
+      "filename": "no_position.json",
+      "planet_count": 27
     }
   }
 }

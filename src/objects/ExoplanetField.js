@@ -4,10 +4,105 @@ import {
     generateGasGiantTextureAsync,
     generateIceGiantTextureAsync,
     generateNormalMapAsync,
+    generateLavaEmissiveTexture,
     getColorByComposition
 } from '../utils/textureGenerator.js';
 import { createAtmosphere } from '../shaders/AtmosphereShader.js';
-import { LY_TO_SCENE, EARTH_RADIUS_SCALE, MAX_PLANET_RADIUS, MIN_PLANET_RADIUS, LOD } from '../config/SceneConstants.js';
+import { LY_TO_SCENE, AU_TO_SCENE, EARTH_RADIUS_SCALE, MAX_PLANET_RADIUS, MIN_PLANET_RADIUS, LOD } from '../config/SceneConstants.js';
+import { StarLightPool } from '../utils/StarLightPool.js';
+
+// ─── Adaptive Scaling for Exoplanets ────────────────────────────────
+const EXO_MIN_PIXELS = 3;
+const EXO_SCREEN_REF = 1920;
+const EXO_HALF_FOV = (60 / 2) * Math.PI / 180;
+
+function exoAdaptiveScale(meshRadius, cameraDistance) {
+    if (cameraDistance <= 0) return 1;
+    const viewWidth = 2 * cameraDistance * Math.tan(EXO_HALF_FOV);
+    const currentPixels = (meshRadius * 2 / viewWidth) * EXO_SCREEN_REF;
+    if (currentPixels >= EXO_MIN_PIXELS) return 1;
+    return EXO_MIN_PIXELS / currentPixels;
+}
+
+const MULTI_PLANET_MIN_SPREAD = 8_000;
+const MULTI_PLANET_ORBIT_VISUAL_BOOST = 300;
+const MULTI_PLANET_SCALE_SAFETY = 0.92;
+
+function hashString(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+}
+
+function getSystemKey(planet) {
+    return planet.hostname || planet.host_name || planet.star_name || null;
+}
+
+function getRenderedRadius(planet) {
+    const radiusInEarthRadii = planet.pl_rade || 1.0;
+    return Math.max(MIN_PLANET_RADIUS, Math.min(radiusInEarthRadii * EARTH_RADIUS_SCALE, MAX_PLANET_RADIUS));
+}
+
+function buildMultiPlanetOffsets(planets) {
+    const grouped = new Map();
+
+    for (const planet of planets) {
+        const systemKey = getSystemKey(planet);
+        if (!systemKey) continue;
+        if (!grouped.has(systemKey)) grouped.set(systemKey, []);
+        grouped.get(systemKey).push(planet);
+    }
+
+    const offsets = new Map();
+
+    for (const [systemKey, group] of grouped) {
+        if (group.length < 2) continue;
+
+        const sortedPlanets = [...group].sort((a, b) => {
+            const aOrbit = Number.isFinite(a.pl_orbsmax) ? a.pl_orbsmax : Number.POSITIVE_INFINITY;
+            const bOrbit = Number.isFinite(b.pl_orbsmax) ? b.pl_orbsmax : Number.POSITIVE_INFINITY;
+            if (aOrbit !== bOrbit) return aOrbit - bOrbit;
+            return (a.pl_name || '').localeCompare(b.pl_name || '');
+        });
+
+        const planetCount = sortedPlanets.length;
+        const phase = ((hashString(systemKey) % 3600) / 3600) * Math.PI * 2;
+        const maxRadius = Math.max(...sortedPlanets.map(getRenderedRadius));
+        const safeClearance = maxRadius * 2.4;
+        const sinTerm = Math.sin(Math.PI / planetCount);
+        const separationRadius = sinTerm > 0 ? safeClearance / (2 * sinTerm) : safeClearance;
+
+        for (let i = 0; i < planetCount; i++) {
+            const planet = sortedPlanets[i];
+            const planetRadius = getRenderedRadius(planet);
+            const orbitAu = Number.isFinite(planet.pl_orbsmax) && planet.pl_orbsmax > 0 ? planet.pl_orbsmax : 0;
+            const boostedOrbitDistance = orbitAu * AU_TO_SCENE * MULTI_PLANET_ORBIT_VISUAL_BOOST;
+            const orbitalDistance = Math.max(
+                MULTI_PLANET_MIN_SPREAD,
+                separationRadius,
+                boostedOrbitDistance,
+                planetRadius * 2.5
+            );
+
+            const angle = phase + (i / planetCount) * Math.PI * 2;
+            const hash = hashString(`${systemKey}:${planet.pl_name || ''}`);
+            const inclination = ((((hash >> 20) % 41) - 20) * Math.PI) / 180;
+            offsets.set(
+                planet.pl_name,
+                new THREE.Vector3(
+                    Math.cos(angle) * orbitalDistance,
+                    Math.sin(inclination) * orbitalDistance * 0.2,
+                    Math.sin(angle) * orbitalDistance
+                )
+            );
+        }
+    }
+
+    return offsets;
+}
 
 /**
  * ExoplanetField - Renders thousands of NASA exoplanets as realistic 3D spheres
@@ -36,6 +131,11 @@ export class ExoplanetField {
         this.planetMeshMap = new Map(); // Map planet name -> mesh for quick lookup
         this.loadedHighResTextures = new Set(); // Track which planets have high-res textures loaded
         this.pendingLazyLoads = []; // Track pending lazy load operations
+        this.multiPlanetOffsets = new Map();
+
+        // Host-star lighting: Tier-1 (near) planets register a proxy host-star position;
+        // a bounded pool of real lights tracks the nearest ones to the viewer each frame.
+        this.starLightPool = new StarLightPool(this.meshGroup);
     }
 
     /**
@@ -93,6 +193,9 @@ export class ExoplanetField {
      */
     async create3DMeshes(planetBatch = this.planets) {
         if (!planetBatch || planetBatch.length === 0) return;
+        this.multiPlanetOffsets = buildMultiPlanetOffsets(this.planets);
+        this.applyMultiPlanetLayout();
+        this.updateSystemScaleCaps();
 
         // Shared geometries
         const lowPolyGeom = new THREE.SphereGeometry(1, 12, 8); // Tier 3: Far
@@ -164,15 +267,19 @@ export class ExoplanetField {
                     let metalness = 0.0;
                     let emissive = 0x000000;
                     let emissiveIntensity = 0;
+                    let emissiveMap = null;
 
                     const subType = planet.planetSubType || '';
+                    const isLava = subType === 'lava_world' || subType === 'hot_jupiter';
 
                     if (subType === 'habitable' || subType === 'ice_world') {
                         roughness = 0.5;
-                    } else if (subType === 'lava_world' || subType === 'hot_jupiter') {
+                    } else if (isLava) {
                         roughness = 0.8;
-                        emissive = 0xff0000;
-                        emissiveIntensity = 0.3;
+                        // Glowing veins/pools map instead of a flat emissive tint
+                        emissive = 0xffffff;
+                        emissiveIntensity = 1.2;
+                        emissiveMap = generateLavaEmissiveTexture(256);
                     } else if (subType === 'gas_giant' || subType === 'ice_giant') {
                         roughness = 0.6;
                     }
@@ -184,6 +291,7 @@ export class ExoplanetField {
                         metalness: metalness,
                         emissive: emissive || new THREE.Color(0x000000),
                         emissiveIntensity: emissiveIntensity,
+                        emissiveMap: emissiveMap,
                         transparent: false,
                         opacity: 1.0,
                         alphaTest: 0,
@@ -255,18 +363,35 @@ export class ExoplanetField {
                 // Apply Oblateness (Flattening)
                 if (planet.flattening) {
                     mesh.scale.set(1, 1.0 - planet.flattening, 1);
+                    mesh.userData.shapeScale = new THREE.Vector3(1, 1.0 - planet.flattening, 1);
+                } else {
+                    mesh.userData.shapeScale = new THREE.Vector3(1, 1, 1);
                 }
 
                 // Position in scene units (light-years * LY_TO_SCENE)
-                mesh.position.set(
+                const basePosition = new THREE.Vector3(
                     coords.x_light_years * LY_TO_SCENE,
                     coords.y_light_years * LY_TO_SCENE,
                     coords.z_light_years * LY_TO_SCENE
                 );
+                const multiPlanetOffset = this.multiPlanetOffsets.get(planet.pl_name);
+
+                if (multiPlanetOffset) {
+                    basePosition.add(multiPlanetOffset);
+                }
+
+                mesh.position.copy(basePosition);
 
                 mesh.userData.planetData = planet;
                 mesh.userData.planet = planet; // Compatibility
                 mesh.userData.planetName = planet.pl_name; // Compatibility
+                mesh.userData.basePosition = new THREE.Vector3(
+                    coords.x_light_years * LY_TO_SCENE,
+                    coords.y_light_years * LY_TO_SCENE,
+                    coords.z_light_years * LY_TO_SCENE
+                );
+                mesh.userData.baseRadius = radius;
+                mesh.userData.maxAdaptiveScale = Number.POSITIVE_INFINITY;
 
                 // PBR Shadows
                 mesh.castShadow = true;
@@ -274,6 +399,22 @@ export class ExoplanetField {
 
                 // --- Geometry Enhancements (Tier 1 Only) ---
                 if (tier === 1) {
+                    // Host-star lighting proxy: exoplanet host star positions aren't tracked
+                    // in the current data, so approximate a plausible direction/distance from
+                    // a deterministic per-planet hash (stable across frames since the planet
+                    // itself doesn't move).
+                    const dirHash = hashString(`hoststar:${planet.pl_name}`);
+                    const theta = ((dirHash % 3600) / 3600) * Math.PI * 2;
+                    const phi = (((dirHash >> 12) % 1800) / 1800) * Math.PI - Math.PI / 2;
+                    const offsetDir = new THREE.Vector3(
+                        Math.cos(phi) * Math.cos(theta),
+                        Math.sin(phi),
+                        Math.cos(phi) * Math.sin(theta)
+                    );
+                    const hostStarPosition = mesh.position.clone().add(offsetDir.multiplyScalar(radius * 40));
+                    mesh.userData.hostStarPosition = hostStarPosition;
+                    this.starLightPool.setEmitter(planet.pl_name, hostStarPosition);
+
                     // Atmosphere for habitable exoplanets
                     if (planet.atmosphere && planet.atmosphere.enabled) {
                         const atmosphereLayers = createAtmosphere(radius, planet.atmosphere);
@@ -327,12 +468,63 @@ export class ExoplanetField {
             }
 
             if (index < planetBatch.length) {
+                this.updateSystemScaleCaps();
                 if (window.requestIdleCallback) window.requestIdleCallback(processBatch);
                 else setTimeout(processBatch, 16);
+            } else {
+                this.updateSystemScaleCaps();
             }
         };
 
         processBatch();
+    }
+
+    applyMultiPlanetLayout() {
+        for (const [planetName, mesh] of this.planetMeshMap) {
+            if (!mesh?.userData?.basePosition) continue;
+            const offset = this.multiPlanetOffsets.get(planetName);
+            if (offset) {
+                mesh.position.copy(mesh.userData.basePosition).add(offset);
+            } else {
+                mesh.position.copy(mesh.userData.basePosition);
+            }
+        }
+    }
+
+    updateSystemScaleCaps() {
+        const systemMeshes = new Map();
+
+        for (const mesh of this.planetMeshMap.values()) {
+            if (!mesh?.userData) continue;
+            mesh.userData.maxAdaptiveScale = Number.POSITIVE_INFINITY;
+
+            const planetData = mesh.userData.planetData || mesh.userData.planet;
+            const systemKey = planetData ? getSystemKey(planetData) : null;
+            if (!systemKey) continue;
+
+            if (!systemMeshes.has(systemKey)) systemMeshes.set(systemKey, []);
+            systemMeshes.get(systemKey).push(mesh);
+        }
+
+        for (const meshes of systemMeshes.values()) {
+            if (meshes.length < 2) continue;
+
+            for (let i = 0; i < meshes.length; i++) {
+                const meshA = meshes[i];
+                const radiusA = meshA.userData.baseRadius || meshA.geometry?.boundingSphere?.radius || MIN_PLANET_RADIUS;
+                for (let j = i + 1; j < meshes.length; j++) {
+                    const meshB = meshes[j];
+                    const radiusB = meshB.userData.baseRadius || meshB.geometry?.boundingSphere?.radius || MIN_PLANET_RADIUS;
+                    const centerDistance = meshA.position.distanceTo(meshB.position);
+                    const radiiSum = radiusA + radiusB;
+                    if (radiiSum <= 0) continue;
+
+                    const pairScaleCap = Math.max(0.1, (centerDistance * MULTI_PLANET_SCALE_SAFETY) / radiiSum);
+                    meshA.userData.maxAdaptiveScale = Math.min(meshA.userData.maxAdaptiveScale, pairScaleCap);
+                    meshB.userData.maxAdaptiveScale = Math.min(meshB.userData.maxAdaptiveScale, pairScaleCap);
+                }
+            }
+        }
     }
 
     /** No longer clearing everything by default */
@@ -365,6 +557,29 @@ export class ExoplanetField {
         // LOD System: Update planet textures based on distance from spacecraft
         if (spacecraftPosition) {
             this.updateLOD(spacecraftPosition);
+            this.starLightPool.update(spacecraftPosition);
+            this.updateSunDirections();
+        }
+    }
+
+    /**
+     * Feed each Tier-1 planet's atmosphere shader(s) a live direction toward its
+     * (proxy) host star. Exoplanet meshes are static (no rotation/orbit today), so
+     * this only needs to run once per registered planet, but is cheap enough to
+     * run every frame alongside the LOD/light-pool update.
+     */
+    updateSunDirections() {
+        const direction = new THREE.Vector3();
+        for (const [, mesh] of this.planetMeshMap) {
+            const hostStarPosition = mesh.userData.hostStarPosition;
+            if (!hostStarPosition) continue;
+
+            direction.subVectors(hostStarPosition, mesh.position).normalize();
+            mesh.traverse((child) => {
+                if (child.material?.uniforms?.sunDirection) {
+                    child.material.uniforms.sunDirection.value.copy(direction);
+                }
+            });
         }
     }
 
@@ -470,6 +685,14 @@ export class ExoplanetField {
             // Calculate distance from spacecraft
             const distance = spacecraftPosition.distanceTo(planetWorldPos);
 
+            // Adaptive scaling — keep exoplanets visible at any distance
+            const baseRadius = mesh.userData.baseRadius || mesh.geometry?.boundingSphere?.radius || MIN_PLANET_RADIUS;
+            const adaptiveScale = exoAdaptiveScale(baseRadius, distance);
+            const maxAdaptiveScale = mesh.userData.maxAdaptiveScale ?? Number.POSITIVE_INFINITY;
+            const scale = Math.min(adaptiveScale, maxAdaptiveScale);
+            const shapeScale = mesh.userData.shapeScale || new THREE.Vector3(1, 1, 1);
+            mesh.scale.copy(shapeScale).multiplyScalar(scale);
+
             // Determine desired LOD level
             const needsHighRes = distance < this.lodConfig.highDetailDistance;
             const hasHighRes = this.loadedHighResTextures.has(planetName);
@@ -540,8 +763,15 @@ export class ExoplanetField {
 
                 // Reset material to PBR values suitable for high-res
                 mesh.material.color.setHex(0xffffff); // White so texture shows
-                mesh.material.emissive.setHex(0x000000);
-                mesh.material.emissiveIntensity = 0;
+
+                // Lava worlds keep their glowing-veins emissive map through the high-res
+                // upgrade instead of losing it to the generic reset below.
+                const subType = planetData.planetSubType || planetData.characteristics?.planetSubType || '';
+                const isLava = subType === 'lava_world' || subType === 'hot_jupiter';
+                if (!isLava) {
+                    mesh.material.emissive.setHex(0x000000);
+                    mesh.material.emissiveIntensity = 0;
+                }
 
                 // Earth-like roughness/metalness or default
                 // We don't have easy access to 'isEarth' here without re-checking name, so use generic
@@ -614,6 +844,7 @@ export class ExoplanetField {
      * Dispose of resources
      */
     dispose() {
+        this.starLightPool.dispose();
         while (this.meshGroup.children.length > 0) {
             const child = this.meshGroup.children[0];
             if (child.geometry) child.geometry.dispose();

@@ -33,7 +33,7 @@ class AIService {
   }
 
   async _generate(systemInstruction, userText, { temperature, maxOutputTokens } = {}) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
+    const url = `${CONFIG.ai.baseUrl}/models/${this.model}:generateContent`;
 
     const body = {
       systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
@@ -68,7 +68,7 @@ class AIService {
   }
 
   async _chat(systemInstruction, messages, { temperature, maxOutputTokens } = {}) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
+    const url = `${CONFIG.ai.baseUrl}/models/${this.model}:generateContent`;
 
     // Convert chat history to Gemini format
     const contents = messages.map(msg => ({

@@ -39,8 +39,14 @@ export class TeleportController {
 
         this.createTeleportFlash();
 
-        const planetRadius = (planet.pl_rade || 1.0) * EARTH_RADIUS_SCALE;
-        const offset = planetRadius * 1.5;
+        // SOLAR_RADIUS_SCALE=0.3, EARTH_RADIUS_SCALE=1000 at unified scale
+        let offset;
+        if (isSolarPlanet) {
+            offset = (planet.pl_rade || 1.0) * 0.5 * 3;
+        } else {
+            const planetRadius = (planet.pl_rade || 1.0) * EARTH_RADIUS_SCALE;
+            offset = planetRadius * 1.5;
+        }
         const direction = targetPosition.clone().normalize();
         const approachPosition = targetPosition.clone().sub(direction.multiplyScalar(offset));
 
@@ -49,7 +55,7 @@ export class TeleportController {
 
             if (this.spacecraft.velocity) {
                 this.spacecraft.velocity.set(0, 0, 0);
-                this.spacecraft.forwardSpeed = 500.0;
+                this.spacecraft.forwardSpeed = isSolarPlanet ? 50.0 : 5000.0;
             }
 
             this.spacecraft.group.lookAt(targetPosition);

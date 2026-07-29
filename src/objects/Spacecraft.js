@@ -12,25 +12,24 @@ export class Spacecraft {
     constructor() {
         this.group = new THREE.Group();
 
-        // Start just outside Earth (~500 units above Earth's surface)
-        // Earth is at roughly (-9625, -2506, -1086) with radius 200
-        this.group.position.set(-9625, -2006, -1086);
+        // Start near the Sun (Earth at ~31.6 units, solar system ~950 units across)
+        this.group.position.set(0, 50, 150);
 
-        // Constant forward speed (scaled for AU_TO_SCENE=10000)
-        this.minSpeed = 100.0;
-        this.maxSpeed = 2000000.0;
-        this.forwardSpeed = 500.0;
-        this.autopilotSpeed = 2000.0;
+        // Speeds for unified scale (solar system ~950 units, exoplanets ~8,480,000+ units)
+        this.minSpeed = 1.0;
+        this.maxSpeed = 50000000.0;
+        this.forwardSpeed = 50.0;
+        this.autopilotSpeed = 100.0;
 
         // Arcade flight parameters
         this.turnSpeed = 1.5;
         this.pitchSpeed = 1.2;
         this.bankLimit = 0.6;
-        this.strafeFactor = 500.0;
+        this.strafeFactor = 50.0;
         this.autoLevelSpeed = 4.0;
         this.strafeDecay = 4.0;
 
-        this.steeringForce = 200;
+        this.steeringForce = 20.0;
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.lateralVelocity = 0; // Strafe speed component
 
@@ -75,7 +74,7 @@ export class Spacecraft {
         loader.load('assets/space_shuttle.glb', (gltf) => {
             console.log('Spacecraft Model Loaded');
             const model = gltf.scene;
-            model.scale.set(1.5, 1.5, 1.5);
+            model.scale.set(0.03, 0.03, 0.03);
             model.rotation.y = 0;
 
             model.traverse((child) => {
@@ -147,18 +146,19 @@ export class Spacecraft {
         tail.position.set(-6, 3, 0);
         group.add(tail);
 
+        group.scale.set(0.02, 0.02, 0.02);
         this.mesh.add(group);
     }
 
 
 
     createNavLights() {
-        const portLight = new THREE.PointLight(0xff0000, 1, 5);
-        portLight.position.set(2, -0.5, 4); // +Z is Left
+        const portLight = new THREE.PointLight(0xff0000, 1, 1.0);
+        portLight.position.set(0.03, -0.01, 0.05);
         this.mesh.add(portLight);
 
-        const starboardLight = new THREE.PointLight(0x00ff00, 1, 5);
-        starboardLight.position.set(2, -0.5, -4); // -Z is Right
+        const starboardLight = new THREE.PointLight(0x00ff00, 1, 1.0);
+        starboardLight.position.set(0.03, -0.01, -0.05);
         this.mesh.add(starboardLight);
 
         this.portLight = portLight;
@@ -248,14 +248,13 @@ export class Spacecraft {
         // Ship forward is +X. Camera sits behind (-X) and above (+Y).
         const isCockpit = this.viewMode === 'COCKPIT';
 
-        // Local-space offsets
         const camOffset = isCockpit
-            ? new THREE.Vector3(12, 4, 0)
-            : new THREE.Vector3(-50, 18, 0);
+            ? new THREE.Vector3(0.2, 0.05, 0)
+            : new THREE.Vector3(-1.5, 0.4, 0);
 
         const lookOffset = isCockpit
-            ? new THREE.Vector3(100, 2, 0)
-            : new THREE.Vector3(50, 5, 0);
+            ? new THREE.Vector3(1.5, 0.03, 0)
+            : new THREE.Vector3(3.0, 0.1, 0);
 
         // Transform to world space
         const targetPos = camOffset.applyQuaternion(this.group.quaternion).add(this.group.position);
@@ -279,7 +278,7 @@ export class Spacecraft {
         for (const planet of planets) {
             // Planet position might be direct or in a group
             let planetPos = new THREE.Vector3();
-            let radius = 1000.0; // Default
+            let radius = 10.0; // Default proximity radius
 
             if (planet.position) {
                 // Check if it's a Vector3 (Solar system planet mesh/group)
@@ -312,7 +311,7 @@ export class Spacecraft {
             // at 4x radius -> max speed 2000
 
             const factor = Math.max(0, (nearestDist - nearestPlanetRadius) / (safetyThreshold - nearestPlanetRadius));
-            const safeMaxSpeed = THREE.MathUtils.lerp(50.0, 5000.0, factor);
+            const safeMaxSpeed = THREE.MathUtils.lerp(0.5, 200.0, factor);
 
             // Apply damping if current speed is too high
             if (this.forwardSpeed > safeMaxSpeed) {

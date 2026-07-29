@@ -5,7 +5,7 @@
  */
 
 import * as THREE from 'three';
-import { LY_TO_SCENE } from '../config/SceneConstants.js';
+import { LY_TO_SCENE, BLOOM_LAYER } from '../config/SceneConstants.js';
 
 export class RealStarField {
     constructor() {
@@ -124,6 +124,7 @@ export class RealStarField {
         this.mesh = new THREE.Points(this.geometry, this.material);
         this.mesh.renderOrder = -999;
         this.mesh.frustumCulled = false; // Stars span the entire scene
+        this.mesh.layers.enable(BLOOM_LAYER);
 
         console.log(`RealStarField: loaded ${count} stars`);
     }

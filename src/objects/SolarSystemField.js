@@ -1,6 +1,30 @@
 import * as THREE from 'three';
 import { createAtmosphere, createCloudLayer } from '../shaders/AtmosphereShader.js';
 import { AU_TO_SCENE, SOLAR_RADIUS_SCALE, SOLAR_MAX_RADIUS, SUN_RADIUS } from '../config/SceneConstants.js';
+import { SunFlare } from '../utils/SunFlare.js';
+
+// ─── Adaptive Scaling ───────────────────────────────────────────────
+// At unified LY scale, the solar system is ~1 scene unit across.
+// Planets must inflate massively to be visible at any zoom level.
+
+const MIN_SCREEN_PIXELS = 4;     // minimum on-screen size
+const SCREEN_WIDTH = 1920;       // reference resolution
+const FOV_RAD_HALF = (60 / 2) * Math.PI / 180;
+
+/**
+ * Returns a scale multiplier so a planet stays at least MIN_SCREEN_PIXELS.
+ */
+function adaptiveScale(baseRadius, cameraDistance) {
+    if (cameraDistance <= 0) return 1;
+
+    const viewWidth = 2 * cameraDistance * Math.tan(FOV_RAD_HALF);
+    const pixelsPerUnit = SCREEN_WIDTH / viewWidth;
+    const currentPixels = baseRadius * 2 * pixelsPerUnit;
+
+    if (currentPixels >= MIN_SCREEN_PIXELS) return 1;
+
+    return MIN_SCREEN_PIXELS / currentPixels;
+}
 
 /**
  * SolarSystemField — Renders the solar system in real-time using positions
@@ -46,10 +70,12 @@ export class SolarSystemField {
     }
 
     /**
-     * Per-frame update — refresh positions from the service and animate.
+     * Per-frame update — refresh positions from the service, apply adaptive
+     * scaling, and animate.
      * @param {number} deltaTime — seconds since last frame
+     * @param {THREE.Vector3} [cameraPosition] — current camera world position
      */
-    update(deltaTime) {
+    update(deltaTime, cameraPosition) {
         if (!this.loaded) return;
 
         const bodies = this.service.getBodyPositions();
@@ -63,6 +89,42 @@ export class SolarSystemField {
                 body.position.y * AU_TO_SCENE,
                 body.position.z * AU_TO_SCENE,
             );
+
+            // Adaptive scaling — keep planets visible at any zoom
+            if (cameraPosition) {
+                const baseRadius = Math.max(0.1, Math.min(body.pl_rade * SOLAR_RADIUS_SCALE, SOLAR_MAX_RADIUS));
+                const dist = cameraPosition.distanceTo(mesh.position);
+                const scale = adaptiveScale(baseRadius, dist);
+                mesh.scale.setScalar(scale);
+            }
+        }
+
+        // Sun adaptive scaling
+        if (cameraPosition) {
+            const sunMesh = this.bodyMeshes.get('Sun');
+            if (sunMesh) {
+                const dist = cameraPosition.distanceTo(sunMesh.position);
+                const scale = adaptiveScale(SUN_RADIUS, dist);
+                sunMesh.scale.setScalar(scale);
+                if (this.sunFlare) this.sunFlare.matchScale(sunMesh.scale);
+            }
+        }
+
+        // Live sun direction for every body's atmosphere shader (Sun sits at the origin)
+        const sunOrigin = new THREE.Vector3(0, 0, 0);
+        const bodyWorldPos = new THREE.Vector3();
+        for (const [name, mesh] of this.bodyMeshes) {
+            if (name === 'Sun') continue;
+            mesh.getWorldPosition(bodyWorldPos);
+            const sunDirection = sunOrigin.clone().sub(bodyWorldPos).normalize();
+            mesh.traverse((child) => {
+                if (child.material?.uniforms?.sunDirection) {
+                    child.material.uniforms.sunDirection.value.copy(sunDirection);
+                }
+                if (child.material?.userData?.sunDirectionUniform) {
+                    child.material.userData.sunDirectionUniform.value.copy(sunDirection);
+                }
+            });
         }
 
         // Earth rotation + cloud drift
@@ -82,6 +144,7 @@ export class SolarSystemField {
      * Clean up all GPU resources.
      */
     dispose() {
+        this.sunFlare?.dispose();
         this.group.traverse((obj) => {
             if (obj.geometry) obj.geometry.dispose();
             if (obj.material) {
@@ -102,7 +165,9 @@ export class SolarSystemField {
     // ─── Internal helpers ───────────────────────────────────────────
 
     /**
-     * Create the Sun mesh — large emissive sphere fixed at origin.
+     * Create the Sun mesh — emissive sphere fixed at origin.
+     * At unified scale, SUN_RADIUS ≈ 0.05 scene units. Adaptive scaling
+     * inflates it when the camera is far away.
      */
     _createSun() {
         const sunRadius = SUN_RADIUS;
@@ -155,44 +220,28 @@ export class SolarSystemField {
         mesh.userData.isSolar = true;
         this.group.add(mesh);
 
-        // Glow halo around the Sun
-        const glowGeom = new THREE.SphereGeometry(sunRadius * 1.15, 32, 24);
-        const glowMat = new THREE.ShaderMaterial({
-            uniforms: {},
-            vertexShader: `
-                varying vec3 vNormal;
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                varying vec3 vNormal;
-                void main() {
-                    float intensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
-                    gl_FragColor = vec4(1.0, 0.7, 0.2, intensity * 0.6);
-                }
-            `,
-            transparent: true,
-            side: THREE.BackSide,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-        });
-        const glowMesh = new THREE.Mesh(glowGeom, glowMat);
-        glowMesh.position.set(0, 0, 0);
-        this.group.add(glowMesh);
+        // Sun flare — cheap additive glow + streak sprites (replaces the previous
+        // fresnel-shader glow sphere so the Sun reads as a proper bright/flaring body).
+        this.sunFlare = new SunFlare(sunRadius);
+        this.sunFlare.group.position.set(0, 0, 0);
+        this.group.add(this.sunFlare.group);
 
-        // Sun light
-        const sunLight = new THREE.PointLight(0xffffee, 5, 0, 0);
+        // Sun light — the dominant key light for the whole solar system. Real decay
+        // (inverse-square-ish falloff) so Mercury reads bright and Neptune reads dim,
+        // instead of every body being lit identically regardless of distance.
+        const sunLight = new THREE.PointLight(0xffffee, 8, 0, 2);
         sunLight.position.set(0, 0, 0);
         this.group.add(sunLight);
+
+        // Store Sun mesh reference for adaptive scaling
+        this.bodyMeshes.set('Sun', mesh);
     }
 
     /**
      * Create a mesh for a single solar system body.
      */
     _createBodyMesh(body) {
-        const radius = Math.max(50, Math.min(body.pl_rade * SOLAR_RADIUS_SCALE, SOLAR_MAX_RADIUS));
+        const radius = Math.max(0.1, Math.min(body.pl_rade * SOLAR_RADIUS_SCALE, SOLAR_MAX_RADIUS));
         const segmentsW = body.pl_rade > 2 ? 32 : 24;
         const segmentsH = body.pl_rade > 2 ? 24 : 18;
 

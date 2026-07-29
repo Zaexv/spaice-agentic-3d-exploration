@@ -51,16 +51,24 @@ export const AtmosphereShader = {
             
             // Atmospheric scattering (Rayleigh approximation)
             vec3 lightDir = normalize(sunDirection);
-            float scatter = max(0.0, dot(vNormal, lightDir));
-            scatter = pow(scatter, 2.0) * scatterStrength;
-            
+            float scatterDot = max(0.0, dot(vNormal, lightDir));
+            float scatter = pow(scatterDot, 2.0) * scatterStrength;
+
             // Combine effects
             float alpha = fresnel + scatter * 0.3;
             alpha = smoothstep(0.0, 1.0, alpha);
-            
-            // Color variation based on angle
+
+            // Per-channel scatter response — shorter (blue) wavelengths scatter more at
+            // grazing/terminator angles, longer (red/orange) wavelengths dominate near the
+            // sun-facing side, giving a warmer terminator glow instead of one flat tint shift.
+            float grazing = 1.0 - scatterDot;
+            vec3 scatterTint = vec3(
+                1.0 + grazing * 0.15,
+                0.9 + grazing * 0.05,
+                0.8 - grazing * 0.35
+            );
             vec3 finalColor = atmosphereColor;
-            finalColor = mix(finalColor, vec3(1.0, 0.9, 0.8), scatter * 0.5);
+            finalColor = mix(finalColor, scatterTint, scatter * 0.5);
             
             // Soft falloff
             alpha *= exp(-falloff * (1.0 - fresnel));
@@ -192,9 +200,10 @@ export function createAtmosphere(planetRadius, atmosphereConfig) {
     });
 
     innerMaterial.uniforms.atmosphereColor.value = new THREE.Color(atmosphereConfig.color || 0x4a90e2);
-    innerMaterial.uniforms.intensity.value = 0.8;
-    innerMaterial.uniforms.rimPower.value = 2.5;
+    innerMaterial.uniforms.intensity.value = atmosphereConfig.intensity ?? 0.8;
+    innerMaterial.uniforms.rimPower.value = atmosphereConfig.rimPower ?? 2.5;
     innerMaterial.uniforms.falloff.value = 3.0;
+    innerMaterial.uniforms.scatterStrength.value = (atmosphereConfig.scatterStrength ?? 0.7) * 0.7;
 
     const innerMesh = new THREE.Mesh(innerGeometry, innerMaterial);
     innerMesh.renderOrder = 11; // Render after planets
@@ -215,10 +224,10 @@ export function createAtmosphere(planetRadius, atmosphereConfig) {
     });
 
     outerMaterial.uniforms.atmosphereColor.value = new THREE.Color(atmosphereConfig.color || 0x4a90e2);
-    outerMaterial.uniforms.intensity.value = 0.4;
-    outerMaterial.uniforms.rimPower.value = 4.0;
+    outerMaterial.uniforms.intensity.value = (atmosphereConfig.intensity ?? 0.8) * 0.5;
+    outerMaterial.uniforms.rimPower.value = (atmosphereConfig.rimPower ?? 2.5) * 1.6;
     outerMaterial.uniforms.falloff.value = 5.0;
-    outerMaterial.uniforms.scatterStrength.value = 0.7;
+    outerMaterial.uniforms.scatterStrength.value = atmosphereConfig.scatterStrength ?? 0.7;
 
     const outerMesh = new THREE.Mesh(outerGeometry, outerMaterial);
     outerMesh.renderOrder = 11; // Render after planets

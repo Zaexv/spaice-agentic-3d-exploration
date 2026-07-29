@@ -112,7 +112,14 @@ export function generateAtmosphere(classification, colors) {
         hasClouds = true;
     }
 
-    return { enabled, color, density, hasClouds };
+    // Shader-tunable hints derived from density, so thicker atmospheres read as
+    // visibly thicker/brighter rather than every atmospheric planet sharing the
+    // same fixed AtmosphereShader constants.
+    const intensity = 0.5 + density * 0.5;       // thin ~0.575, thick ~1.0
+    const rimPower = 4.0 - density * 2.0;         // thin=sharper rim, thick=softer/wider
+    const scatterStrength = 0.3 + density * 0.6;  // thicker atmosphere scatters more sunlight
+
+    return { enabled, color, density, hasClouds, intensity, rimPower, scatterStrength };
 }
 
 export function generateRings(classification, name) {

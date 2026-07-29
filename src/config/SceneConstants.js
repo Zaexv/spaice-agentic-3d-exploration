@@ -1,14 +1,15 @@
 /**
- * SceneConstants — Adaptive dual-scale system for SpAIce
+ * SceneConstants — Unified coordinate system for SpAIce
  *
- * The solar system (~60 AU = 0.001 LY) and interstellar space (~4-3260 LY)
- * cannot share a single linear scale. We use two rendering contexts:
+ * Positions and radii are scaled together so visual proportions look natural.
  *
- * SOLAR MODE: Camera is near the Sun. Solar system bodies rendered at AU scale.
- *             Exoplanets and stars hidden (too far to see anyway).
+ *   Sun radius:      3.0    (< Mercury orbit 12.2 — fits with 9.2 gap)
+ *   Earth:           0.5 radius at 31.6 orbit (1.6%)
+ *   Jupiter:         5.6 radius at 164 orbit (3.4%)
+ *   Neptune:         at 949 scene units
+ *   Proxima Cen b:   at 8,480,000 scene units (8,937× farther than Neptune)
  *
- * INTERSTELLAR MODE: Camera is at galactic distances. Exoplanets and stars
- *                    rendered at LY scale. Solar system collapsed to a marker.
+ * Coordinate frame: Heliocentric J2000 Equatorial (ICRS)
  */
 
 // ─── Unit Conversions ────────────────────────────────────────────────
@@ -16,52 +17,48 @@ export const PARSEC_TO_LY = 3.26156;
 export const AU_TO_LY = 1.581e-5;
 export const LY_TO_PARSEC = 1 / PARSEC_TO_LY;
 
-// ─── Solar Mode (inside the solar system) ────────────────────────────
-/** 1 AU = 10,000 scene units in solar mode */
-export const AU_TO_SCENE = 10_000;
+// ─── The One Scale ──────────────────────────────────────────────────
+/** 1 light-year = 2,000,000 scene units */
+export const LY_TO_SCENE = 2_000_000;
 
-/** Planet radii in solar mode: 1 Earth radius = 200 scene units */
-export const SOLAR_RADIUS_SCALE = 200;
+/** 1 AU ≈ 31.62 scene units (derived) */
+export const AU_TO_SCENE = AU_TO_LY * LY_TO_SCENE;
 
-/** Sun radius (capped to fit inside Mercury orbit) */
-export const SUN_RADIUS = 3000; // Mercury orbit at ~3,870 units
+// ─── Solar System Planet Rendering ──────────────────────────────────
+/** 1 Earth radius = 0.5 scene units */
+export const SOLAR_RADIUS_SCALE = 0.5;
 
-/** Max planet radius in solar mode */
-export const SOLAR_MAX_RADIUS = 3000;
+/** Max solar planet radius */
+export const SOLAR_MAX_RADIUS = 6.0;
 
-// ─── Interstellar Mode (galactic distances) ──────────────────────────
-/** 1 light-year = 1,000 scene units in interstellar mode */
-export const LY_TO_SCENE = 1_000;
+/** Sun radius */
+export const SUN_RADIUS = 3.0;
 
-/** Planet radii in interstellar mode: 1 Earth radius = 50 scene units */
-export const EARTH_RADIUS_SCALE = 50;
+// ─── Exoplanet Rendering ────────────────────────────────────────────
+/** 1 Earth radius = 5,000 scene units for exoplanets */
+export const EARTH_RADIUS_SCALE = 5_000;
 
-/** Max planet radius in interstellar mode */
-export const MAX_PLANET_RADIUS = 500;
+/** Max exoplanet radius */
+export const MAX_PLANET_RADIUS = 50_000;
 
-/** Min visible radius for exoplanets */
-export const MIN_PLANET_RADIUS = 20;
-
-// ─── Context Switching ───────────────────────────────────────────────
-/** Distance from Sun (in solar scene units) beyond which we switch to interstellar mode */
-export const SOLAR_MODE_RADIUS = 600_000; // ~60 AU — edge of solar system
+/** Min visible exoplanet radius */
+export const MIN_PLANET_RADIUS = 2_000;
 
 // ─── Camera ──────────────────────────────────────────────────────────
-/** Solar mode camera */
-export const SOLAR_CAMERA_NEAR = 1;
-export const SOLAR_CAMERA_FAR = 2_000_000;
+export const CAMERA_NEAR = 0.01;
+export const CAMERA_FAR = 10_000_000_000;
 
-/** Interstellar mode camera */
-export const INTERSTELLAR_CAMERA_NEAR = 1;
-export const INTERSTELLAR_CAMERA_FAR = 20_000_000; // 3260 LY * 1000 + margin
-
-// ─── LOD (interstellar mode) ─────────────────────────────────────────
+// ─── LOD (distance thresholds in scene units) ───────────────────────
 export const LOD = {
-    HIGH_DETAIL: 25_000,       // < 25 LY
-    MEDIUM_DETAIL: 100_000,    // < 100 LY
+    HIGH_DETAIL: 50_000_000,    // < 25 LY
+    MEDIUM_DETAIL: 200_000_000, // < 100 LY
     UPDATE_INTERVAL_MS: 1000,
     MAX_UPDATES_PER_FRAME: 2,
 };
 
 // ─── Derived ─────────────────────────────────────────────────────────
 export const PARSEC_TO_SCENE = PARSEC_TO_LY * LY_TO_SCENE;
+
+// ─── Rendering Layers ──────────────────────────────────────────────────
+/** Objects on this layer (stars, sun flares) get selective bloom. Layer 0 (default) never blooms. */
+export const BLOOM_LAYER = 1;

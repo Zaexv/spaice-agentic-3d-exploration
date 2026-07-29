@@ -19,13 +19,21 @@ export class SceneManager {
         // DISABLED - fog was causing transparency issues
         // this.scene.fog = new THREE.FogExp2(0x000011, 0.00000002);
 
-        // Ambient light ensures all planets are at least partially visible
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Fill lighting only — kept well below any per-body key light (Sun / host-star
+        // pool) so a real day/night terminator can read on planet surfaces instead of
+        // being washed out by uniform ambient/directional light.
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.18);
         this.scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.1);
         directionalLight.position.set(1, 0.5, 0);
         this.scene.add(directionalLight);
+
+        // Rim light — subtle edge highlight independent of any atmosphere shader's own
+        // fresnel term, so airless (non-atmospheric) planets still read with a defined edge.
+        const rimLight = new THREE.DirectionalLight(0xffeebb, 0.25);
+        rimLight.position.set(-0.6, -0.3, 0.8);
+        this.scene.add(rimLight);
     }
 
     add(object) {

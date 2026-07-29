@@ -32,6 +32,11 @@ worker.onmessage = function (e) {
                 THREE.UnsignedByteType
             );
 
+            // Mipmaps — without these, distant planets using worker-generated textures
+            // showed shimmering/aliasing as their apparent size shrank on screen.
+            texture.generateMipmaps = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
             texture.needsUpdate = true;
             resolve(texture);
         } else {
@@ -697,6 +702,56 @@ export function generateNightLightsTexture(size = 512, density = 0.5) {
             data[index] = Math.min(255, 255 * intensity);
             data[index + 1] = Math.min(255, 215 * intensity);
             data[index + 2] = Math.min(255, 120 * intensity);
+            data[index + 3] = 255;
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    textureCache.set(cacheKey, texture);
+    return texture;
+}
+
+/**
+ * Generate a lava-world emissive map (glowing veins/pools) (Sync)
+ * Used as an `emissiveMap` so molten cracks glow independent of the base diffuse map,
+ * instead of the whole surface sharing one flat emissive tint.
+ */
+export function generateLavaEmissiveTexture(size = 512) {
+    const cacheKey = getCacheKey('lavaEmissive', { size });
+    if (textureCache.has(cacheKey)) return textureCache.get(cacheKey);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    const imageData = ctx.createImageData(size, size);
+    const data = imageData.data;
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const nx = x / size;
+            const ny = y / size;
+
+            // Thin, bright "cracks" — high-frequency noise thresholded sharply, plus
+            // sparser low-frequency "pools" for larger glowing regions.
+            const crackNoise = fbm(nx * 20, ny * 20, 3);
+            const cracks = Math.pow(Math.max(0, crackNoise - 0.55), 3) * 12;
+
+            const poolNoise = fbm(nx * 4, ny * 4, 4);
+            const pools = Math.pow(Math.max(0, poolNoise - 0.65), 2) * 4;
+
+            const glow = Math.min(1, cracks + pools);
+
+            const index = (y * size + x) * 4;
+            data[index] = Math.min(255, 255 * glow);
+            data[index + 1] = Math.min(255, 90 * glow);
+            data[index + 2] = Math.min(255, 20 * glow);
             data[index + 3] = 255;
         }
     }
