@@ -55,7 +55,14 @@ export class TeleportController {
 
             if (this.spacecraft.velocity) {
                 this.spacecraft.velocity.set(0, 0, 0);
-                this.spacecraft.forwardSpeed = isSolarPlanet ? 50.0 : 5000.0;
+                // Exoplanet clusters load progressively in the background, so the target
+                // planet's mesh (and any nearby system-mates) may not exist in the scene
+                // yet at the moment of arrival — checkProximity's safety bubble has nothing
+                // to decelerate against until it spawns. A modest cruise speed (rather than
+                // the previous 5000) keeps the ship far from the target for long enough that
+                // the mesh has almost certainly loaded, and the safety bubble has time to
+                // engage, well before the ship could otherwise fly through the planet.
+                this.spacecraft.forwardSpeed = isSolarPlanet ? 50.0 : 300.0;
             }
 
             this.spacecraft.group.lookAt(targetPosition);
