@@ -284,8 +284,14 @@ export class Spacecraft {
                 // Check if it's a Vector3 (Solar system planet mesh/group)
                 if (planet.position.isVector3) {
                     planetPos.copy(planet.position);
-                    // Try to get radius from geometry or data
-                    if (planet.geometry && planet.geometry.parameters) {
+                    // Prefer userData.baseRadius (the true scene-unit radius) over
+                    // geometry.parameters.radius — ExoplanetField bakes its adaptive
+                    // scale directly into geometry vertices via geometry.scale(), which
+                    // leaves geometry.parameters.radius stale at the pre-scale value (1),
+                    // making this safety bubble a no-op at exoplanet scale otherwise.
+                    if (planet.userData && planet.userData.baseRadius) {
+                        radius = planet.userData.baseRadius;
+                    } else if (planet.geometry && planet.geometry.parameters) {
                         radius = planet.geometry.parameters.radius;
                     } else if (planet.userData && planet.userData.radius) {
                         radius = planet.userData.radius;

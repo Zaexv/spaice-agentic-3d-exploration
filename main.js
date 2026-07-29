@@ -330,7 +330,15 @@ class App {
         if (this.spacecraft) {
             this.spacecraft.steer(this.inputManager.keys, deltaTime, this.inputManager.mouse);
 
-            const nearbyObjects = this.sceneManager.scene.children.filter(obj => obj.userData && obj.userData.planetData);
+            // Planet meshes live one level deep inside their group containers
+            // (ExoplanetField.meshGroup / SolarSystemField.group), so a non-recursive
+            // scene.children.filter() here always returned an empty list — the
+            // spacecraft's proximity safety-bubble (checkProximity) never actually
+            // saw any planets and never decelerated the ship before impact.
+            const nearbyObjects = [];
+            this.sceneManager.scene.traverse((obj) => {
+                if (obj.userData && obj.userData.planetData) nearbyObjects.push(obj);
+            });
             this.spacecraft.update(deltaTime, nearbyObjects);
             this.spacecraft.updateCamera(this.cameraManager.camera);
 
